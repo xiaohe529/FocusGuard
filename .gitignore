@@ -1,0 +1,15 @@
+# Swift / Xcode
+.build/
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+*.swiftpm/
+
+# macOS
+.DS_Store
+*.dmg
+
+# Secrets & tokens
+*.token
+*.secret
+.env

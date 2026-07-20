@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>zh_CN</string>
+    <key>CFBundleExecutable</key>
+    <string>FocusGuard</string>
+    <key>CFBundleIconFile</key>
+    <string></string>
+    <key>CFBundleIdentifier</key>
+    <string>com.focusguard.app</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>FocusGuard</string>
+    <key>CFBundleDisplayName</key>
+    <string>FocusGuard</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSSupportsAutomaticTermination</key>
+    <false/>
+    <key>NSSupportsSuddenTermination</key>
+    <false/>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.productivity</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>FocusGuard uses AppleScript to install its privileged helper once. After installation, blocking operations run silently without prompts.</string>
+    <key>NSAppleMusicUsageDescription</key>
+    <string>FocusGuard does not access Apple Music. This entry is required by some system APIs used for window management.</string>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>FocusGuard does not access your Desktop. This entry is required by AppKit window activation APIs.</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>FocusGuard does not access your Documents. This entry is required by AppKit window activation APIs.</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>FocusGuard does not access your Downloads. This entry is required by AppKit window activation APIs.</string>
+</dict>
+</plist>
