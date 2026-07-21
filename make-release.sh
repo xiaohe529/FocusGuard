@@ -13,14 +13,21 @@ if [ ! -d "$APP_DIR" ]; then
 fi
 
 VERSION="${1:-1.0.0}"
-ZIP_FILE="${APP_NAME}-v${VERSION}.zip"
+PKG_FILE="${APP_NAME}-v${VERSION}.pkg"
 
-# ---- make zip ----
-rm -f "$ZIP_FILE"
+echo "=== Creating pkg installer: ${PKG_FILE} ==="
 
-cp -R "$APP_DIR" "${APP_NAME}.app"
-zip -r -q "$ZIP_FILE" "${APP_NAME}.app"
-rm -rf "${APP_NAME}.app"
+rm -f "$PKG_FILE"
 
-echo "=== Done: $ZIP_FILE ==="
+pkgbuild \
+    --component "$APP_DIR" \
+    --install-location /Applications \
+    --identifier com.focusguard.app \
+    --version "$VERSION" \
+    "$PKG_FILE"
+
+echo "=== Done: $PKG_FILE ==="
 echo "Upload to GitHub/Gitee Releases."
+echo ""
+echo "Users double-click the .pkg and follow the installer wizard."
+echo "If warned: right-click → Open, or System Settings → Privacy & Security → Open Anyway."
