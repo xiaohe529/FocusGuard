@@ -5,35 +5,47 @@ func renderIcon(size: CGFloat) -> NSImage {
     let image = NSImage(size: NSSize(width: size, height: size))
     image.lockFocus()
     let ctx = NSGraphicsContext.current!.cgContext
-    let r = size * 0.224
-    let rect = CGRect(x: 0, y: 0, width: size, height: size)
-    let path = NSBezierPath(roundedRect: rect, xRadius: r, yRadius: r)
 
-    // Subtle gradient — deep navy, barely perceptible (matches macOS system icons)
+    // Badge: smaller rounded rectangle, inset ~14% from each edge
+    let inset = size * 0.14
+    let badgeRect = CGRect(x: inset, y: inset, width: size - inset * 2, height: size - inset * 2)
+    let badgeR = badgeRect.width * 0.224
+    let badgePath = NSBezierPath(roundedRect: badgeRect, xRadius: badgeR, yRadius: badgeR)
+
+    // Subtle drop shadow
+    ctx.saveGState()
+    ctx.setShadow(offset: CGSize(width: 0, height: size * 0.04),
+                  blur: size * 0.08,
+                  color: NSColor.black.withAlphaComponent(0.25).cgColor)
+    NSColor(red: 0.18, green: 0.35, blue: 0.62, alpha: 1.0).setFill()
+    badgePath.fill()
+    ctx.restoreGState()
+
+    // Gradient overlay on badge
     let gradient = CGGradient(
         colorsSpace: CGColorSpace(name: CGColorSpace.sRGB),
         colors: [
-            NSColor(red: 0.18, green: 0.35, blue: 0.62, alpha: 1.0).cgColor,
-            NSColor(red: 0.15, green: 0.30, blue: 0.55, alpha: 1.0).cgColor,
+            NSColor(red: 0.20, green: 0.38, blue: 0.65, alpha: 1.0).cgColor,
+            NSColor(red: 0.16, green: 0.32, blue: 0.58, alpha: 1.0).cgColor,
         ] as CFArray,
         locations: [0, 1])!
     ctx.saveGState()
-    path.addClip()
+    badgePath.addClip()
     ctx.drawLinearGradient(gradient,
         start: CGPoint(x: 0, y: size),
         end: CGPoint(x: size, y: 0),
         options: [])
     ctx.restoreGState()
 
-    // Subtle inner highlight
-    let highlight = NSBezierPath(roundedRect: rect.insetBy(dx: size * 0.01, dy: size * 0.01),
-                                  xRadius: r * 0.9, yRadius: r * 0.9)
-    highlight.lineWidth = size * 0.006
-    NSColor.white.withAlphaComponent(0.12).setStroke()
-    highlight.stroke()
+    // Inner highlight
+    let hl = NSBezierPath(roundedRect: badgeRect.insetBy(dx: badgeRect.width * 0.02, dy: badgeRect.height * 0.02),
+                           xRadius: badgeR * 0.85, yRadius: badgeR * 0.85)
+    hl.lineWidth = size * 0.005
+    NSColor.white.withAlphaComponent(0.10).setStroke()
+    hl.stroke()
 
-    // Small centered shield — 22% of icon, matching native macOS icon proportions
-    let symbolSize = size * 0.22
+    // Small shield symbol inside badge
+    let symbolSize = badgeRect.width * 0.28
     let config = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: .medium)
     let symbol = NSImage(systemSymbolName: "lock.shield.fill", accessibilityDescription: nil)!
         .withSymbolConfiguration(config)!
