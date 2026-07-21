@@ -44,7 +44,7 @@ enum HelperInstaller {
 
         do shell script "cp -f " & quoted form of plistSrc & " " & quoted form of plistDest & " && chmod 644 " & quoted form of plistDest & " && chown root:wheel " & quoted form of plistDest with administrator privileges
 
-        do shell script "mkdir -p /Library/Application\\\\ Support/FocusGuard && cp -f " & quoted form of tokenSrc & " " & quoted form of tokenDest & " && chmod 600 " & quoted form of tokenDest & " && chown root:wheel " & quoted form of tokenDest with administrator privileges
+        do shell script "mkdir -p /Library/Application\\\\ Support/FocusGuard && cp -f " & quoted form of tokenSrc & " " & quoted form of tokenDest & " && chmod 644 " & quoted form of tokenDest & " && chown root:wheel " & quoted form of tokenDest with administrator privileges
 
         do shell script "launchctl bootstrap system " & quoted form of plistDest with administrator privileges
         """

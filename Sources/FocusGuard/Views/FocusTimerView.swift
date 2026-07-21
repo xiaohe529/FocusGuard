@@ -59,6 +59,14 @@ struct FocusTimerView: View {
                 .padding()
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
 
+            if !state.blockingEnabled {
+                Text("屏蔽未开启，请先开启屏蔽再使用专注计时")
+                    .font(.subheadline)
+                    .foregroundStyle(.orange)
+                    .padding()
+                    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+            }
+
             Button {
                 state.startFocusTimer(minutes: focusCustomMinutes)
             } label: {
@@ -67,7 +75,7 @@ struct FocusTimerView: View {
                     .padding(.vertical, 6)
             }
             .buttonStyle(AlwaysActiveButtonStyle(color: .green))
-            .disabled(focusCustomMinutes < 1 || state.delayedBlockActive)
+            .disabled(focusCustomMinutes < 1 || state.delayedBlockActive || !state.blockingEnabled)
         }
         .padding()
     }

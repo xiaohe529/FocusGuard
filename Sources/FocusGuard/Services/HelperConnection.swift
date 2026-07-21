@@ -72,15 +72,29 @@ final class HelperConnection: @unchecked Sendable {
     }
 
     private func pingHelper() async -> Bool {
-        guard let conn = ensureConnection() else { return false }
+        guard let conn = ensureConnection() else {
+            FocusLogger.error("HelperConnection: ensureConnection returned nil")
+            return false
+        }
         return await withCheckedContinuation { cont in
-            let proxy = conn.remoteObjectProxyWithErrorHandler { _ in
+            let proxy = conn.remoteObjectProxyWithErrorHandler { err in
+                FocusLogger.error("HelperConnection: XPC error handler called: \(err)")
                 cont.resume(returning: false)
             } as! HelperProtocol
-            proxy.ping("") { ok, _ in
-                guard ok else { cont.resume(returning: false); return }
+            proxy.ping("") { ok, msg in
+                if !ok {
+                    FocusLogger.error("HelperConnection: ping returned ok=false, msg=\(msg)")
+                    cont.resume(returning: false)
+                    return
+                }
                 let token = Self.readToken()
+                if token.isEmpty {
+                    FocusLogger.error("HelperConnection: readToken returned empty string")
+                }
                 proxy.verifyToken(token) { tokenOk in
+                    if !tokenOk {
+                        FocusLogger.error("HelperConnection: verifyToken failed — token mismatch")
+                    }
                     cont.resume(returning: tokenOk)
                 }
             }

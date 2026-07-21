@@ -78,12 +78,6 @@ class AppState: ObservableObject {
             FocusLogger.info("No settings.json or decode failed — starting fresh")
         }
 
-        // Migrate from UserDefaults to Keychain
-        if let oldPassword = UserDefaults.standard.string(forKey: "lockPassword") {
-            try? KeychainPassword.save(oldPassword)
-            UserDefaults.standard.removeObject(forKey: "lockPassword")
-            FocusLogger.info("Migrated password from UserDefaults to Keychain")
-        }
         hasPassword = KeychainPassword.load() != nil
 
         launchAtLogin = UserDefaults.standard.bool(forKey: "launchAtLogin")
@@ -221,6 +215,10 @@ class AppState: ObservableObject {
     func startFocusTimer(minutes: Int) {
         guard !delayedBlockActive else {
             lastError = "延时屏蔽进行中，无法启动专注计时"
+            return
+        }
+        guard blockingEnabled else {
+            lastError = "请先开启屏蔽再启动专注计时"
             return
         }
         let end = Date().addingTimeInterval(TimeInterval(minutes * 60))
@@ -562,9 +560,14 @@ class AppState: ObservableObject {
             lastError = "专注计时中，无法修改密码"
             return
         }
-        try? KeychainPassword.save(password)
-        hasPassword = !password.isEmpty
-        FocusLogger.info("Password set/changed")
+        do {
+            try KeychainPassword.save(password)
+            hasPassword = !password.isEmpty
+            FocusLogger.info("Password set/changed")
+        } catch {
+            FocusLogger.error("KeychainPassword.save failed: \(error.localizedDescription)")
+            lastError = "密码保存失败：\(error.localizedDescription)"
+        }
     }
 
     /// Verify password before changing to new one
@@ -602,9 +605,11 @@ class AppState: ObservableObject {
                     }
                     if !helperInstalled {
                         FocusLogger.info("Helper installed but probe failed after retries — will retry later")
+                        helperInstallAttempted = false
                     }
                 } else {
                     FocusLogger.info("Helper install failed — falling back to per-op osascript")
+                    helperInstallAttempted = false
                 }
                 isInstallingHelper = false
             } else {
@@ -691,6 +696,30 @@ class AppState: ObservableObject {
         } else {
             Task { await enableBlocking() }
         }
+    }
+
+    func installHelper() async {
+        guard !helperInstalled else { return }
+        helperInstallAttempted = true
+        isInstallingHelper = true
+        let ok = await HelperInstaller.install()
+        if ok {
+            for i in 0..<3 {
+                try? await Task.sleep(for: .seconds(1))
+                helperInstalled = await HelperConnection.shared.forceProbe()
+                if helperInstalled { break }
+                FocusLogger.info("Helper probe retry \(i+1)/3 failed")
+            }
+            if !helperInstalled {
+                FocusLogger.info("Helper installed but probe failed after retries")
+                helperInstallAttempted = false
+            }
+        } else {
+            FocusLogger.info("Helper install failed")
+            helperInstallAttempted = false
+            lastError = "助手安装失败，请稍后重试"
+        }
+        isInstallingHelper = false
     }
 
     func setLaunchAtLogin(_ enabled: Bool) {

@@ -104,6 +104,14 @@ struct SettingsView: View {
                         Button("卸载") { showUninstallConfirm = true }
                             .buttonStyle(.bordered)
                             .disabled(isUninstalling)
+                    } else {
+                        Button {
+                            Task { await state.installHelper() }
+                        } label: {
+                            Text(state.isInstallingHelper ? "安装中…" : "安装")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(isUninstalling || state.isInstallingHelper)
                     }
                 }
                 .padding(10)

@@ -12,17 +12,17 @@ func renderIcon(size: CGFloat) -> NSImage {
     let badgeR = badgeRect.width * 0.224
     let badgePath = NSBezierPath(roundedRect: badgeRect, xRadius: badgeR, yRadius: badgeR)
 
-    // Solid WeChat Reading blue base (#00A3F5)
-    let baseColor = NSColor(red: 0.00, green: 0.639, blue: 0.961, alpha: 1.0)
+    // Green-to-teal gradient base
+    let baseColor = NSColor(red: 0.176, green: 0.780, blue: 0.408, alpha: 1.0)
     baseColor.setFill()
     badgePath.fill()
 
-    // Subtle gradient overlay for 3D depth — top-left slightly lighter
+    // Gradient: rgb(45,199,104) → rgb(0,200,178)
     let gradient = CGGradient(
         colorsSpace: CGColorSpace(name: CGColorSpace.sRGB),
         colors: [
-            NSColor(red: 0.10, green: 0.67, blue: 0.97, alpha: 1.0).cgColor,
-            NSColor(red: 0.00, green: 0.60, blue: 0.93, alpha: 1.0).cgColor,
+            NSColor(red: 0.176, green: 0.780, blue: 0.408, alpha: 1.0).cgColor,
+            NSColor(red: 0.0, green: 0.784, blue: 0.698, alpha: 1.0).cgColor,
         ] as CFArray,
         locations: [0, 1])!
     ctx.saveGState()
@@ -42,7 +42,7 @@ func renderIcon(size: CGFloat) -> NSImage {
     hl.stroke()
 
     // Shield symbol — 55% of badge width
-    let symbolSize = badgeRect.width * 0.55
+    let symbolSize = badgeRect.width * 0.65
     let config = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: .medium)
     let symbol = NSImage(systemSymbolName: "lock.shield.fill", accessibilityDescription: nil)!
         .withSymbolConfiguration(config)!
