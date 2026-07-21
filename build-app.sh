@@ -35,9 +35,11 @@ cp BundleResources/com.focusguard.helper.plist     "$BUNDLE_DIR/Contents/Resourc
 chmod +x "$BUNDLE_DIR/Contents/MacOS/FocusGuard"
 chmod +x "$BUNDLE_DIR/Contents/Helpers/com.focusguard.helper"
 
-# Ad-hoc sign both binaries
-codesign --force --sign - "$BUNDLE_DIR/Contents/MacOS/FocusGuard" 2>/dev/null || true
+# Ad-hoc sign inner binaries first, then the main app
+# Order matters: signing the outer bundle seals all inner content.
+# If we sign the helper after the app, the seal breaks.
 codesign --force --sign - "$BUNDLE_DIR/Contents/Helpers/com.focusguard.helper" 2>/dev/null || true
+codesign --force --sign - "$BUNDLE_DIR/Contents/MacOS/FocusGuard"
 
 # Also copy helper + plist next to the executable for dev-mode (command-line) runs
 BUILD_OUT_DIR=".build/arm64-apple-macosx/$BUILD_CONFIG"
