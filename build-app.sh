@@ -43,5 +43,8 @@ codesign --force --sign - "$BUNDLE_DIR/Contents/Helpers/com.focusguard.helper" 2
 BUILD_OUT_DIR=".build/arm64-apple-macosx/$BUILD_CONFIG"
 cp BundleResources/com.focusguard.helper.plist "$BUILD_OUT_DIR/com.focusguard.helper.plist"
 
+# Strip Apple Double (._*) files — they corrupt pkg installers
+find "$BUNDLE_DIR" -name "._*" -delete 2>/dev/null || true
+
 echo "=== Bundle created: $BUNDLE_DIR ==="
 echo "Run with: open $BUNDLE_DIR"
