@@ -9,7 +9,6 @@ DerivedData/
 .DS_Store
 *.dmg
 *.zip
-*.pkg
 
 # Secrets & tokens
 *.token

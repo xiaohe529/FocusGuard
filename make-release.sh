@@ -13,31 +13,19 @@ if [ ! -d "$APP_DIR" ]; then
 fi
 
 VERSION="${1:-1.0.0}"
-PKG_FILE="${APP_NAME}-v${VERSION}.pkg"
+ZIP_FILE="${APP_NAME}-v${VERSION}.zip"
 
-echo "=== Creating pkg installer: ${PKG_FILE} ==="
+echo "=== Creating zip: ${ZIP_FILE} ==="
 
-rm -f "$PKG_FILE"
-
-# pkgbuild uses the directory name as the install name, so copy to a
-# temp dir with the correct name before packaging.
-# COPYFILE_DISABLE prevents macOS from creating ._ (Apple Double) files.
-# xattr -cr strips extended attributes that also trigger ._ creation.
+rm -f "$ZIP_FILE"
 rm -rf "${APP_NAME}.app"
+
 COPYFILE_DISABLE=1 cp -R "$APP_DIR" "${APP_NAME}.app"
 xattr -cr "${APP_NAME}.app" 2>/dev/null || true
-find "${APP_NAME}.app" -name "._*" -delete 2>/dev/null || true
-pkgbuild \
-    --component "${APP_NAME}.app" \
-    --install-location /Applications \
-    --identifier com.focusguard.app \
-    --version "$VERSION" \
-    --ownership recommended \
-    "$PKG_FILE"
+zip -r -q "$ZIP_FILE" "${APP_NAME}.app"
 rm -rf "${APP_NAME}.app"
 
-echo "=== Done: $PKG_FILE ==="
+echo "=== Done: $ZIP_FILE ==="
 echo "Upload to GitHub/Gitee Releases."
 echo ""
-echo "Users double-click the .pkg and follow the installer wizard."
-echo "If warned: right-click → Open, or System Settings → Privacy & Security → Open Anyway."
+echo "User install: unzip → drag to /Applications → right-click Open (first time)"
