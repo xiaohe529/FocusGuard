@@ -90,6 +90,8 @@ class AppState: ObservableObject {
         if let enabled = UserDefaults.standard.object(forKey: "blockingEnabled") as? Bool {
             blockingEnabled = enabled
         }
+        delayedBlockLockScreen = UserDefaults.standard.bool(forKey: "delayedBlockLockScreen")
+        delayedBlockAllowExtension = UserDefaults.standard.object(forKey: "delayedBlockAllowExtension") as? Bool ?? true
 
         appBlocker.updateBlockedApps(blockRules.filter { $0.type == .app && $0.enabled }.map { $0.name })
         appBlocker.setBlockingEnabled(blockingEnabled)
@@ -537,7 +539,7 @@ class AppState: ObservableObject {
         appBlocker.updateBlockedApps(blockRules.filter { $0.type == .app && $0.enabled }.map { $0.name })
         appBlocker.setBlockingEnabled(blockingEnabled)
 
-        if blockingEnabled {
+        if blockingEnabled && helperInstalled {
             let domains = blockRules.filter { $0.type == .website && $0.enabled }.map { $0.name }
             do {
                 if domains.isEmpty {

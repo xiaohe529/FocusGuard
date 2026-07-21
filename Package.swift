@@ -18,15 +18,7 @@ let package = Package(
             name: "FocusGuard",
             dependencies: ["FocusGuardHelperShared"],
             path: "Sources/FocusGuard",
-            exclude: ["Info.plist"],
-            linkerSettings: [
-                .unsafeFlags([
-                    "-Xlinker", "-sectcreate",
-                    "-Xlinker", "__TEXT",
-                    "-Xlinker", "__info_plist",
-                    "-Xlinker", "Sources/FocusGuard/Info.plist"
-                ])
-            ]
+            exclude: ["Info.plist"]
         )
     ]
 )

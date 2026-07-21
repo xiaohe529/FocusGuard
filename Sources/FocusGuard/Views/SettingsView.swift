@@ -129,6 +129,7 @@ struct SettingsView: View {
                             state.lastError = "已弹出系统授权框，请到「系统设置 → 隐私与安全性 → 辅助功能」中授权 FocusGuard。授权前锁屏不会生效。"
                         }
                         state.delayedBlockLockScreen = newValue
+                        UserDefaults.standard.set(newValue, forKey: "delayedBlockLockScreen")
                     }
                 )) {
                     Text("到期后锁屏")
@@ -136,7 +137,13 @@ struct SettingsView: View {
                 }
                 .toggleStyle(.switch)
 
-                Toggle(isOn: $state.delayedBlockAllowExtension) {
+                Toggle(isOn: Binding(
+                    get: { state.delayedBlockAllowExtension },
+                    set: {
+                        state.delayedBlockAllowExtension = $0
+                        UserDefaults.standard.set($0, forKey: "delayedBlockAllowExtension")
+                    }
+                )) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("允许延长")
                             .font(.subheadline)
