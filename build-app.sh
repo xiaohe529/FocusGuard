@@ -15,7 +15,7 @@ fi
 echo "=== Building FocusGuard + Helper ($BUILD_CONFIG) ==="
 swift build $SWIFT_FLAGS
 
-BUNDLE_DIR=".build/FocusGuard.app"
+BUNDLE_DIR=".build/FocusGuard_build.app"
 BIN_SRC=".build/arm64-apple-macosx/$BUILD_CONFIG/FocusGuard"
 HELPER_SRC=".build/arm64-apple-macosx/$BUILD_CONFIG/FocusGuardHelper"
 

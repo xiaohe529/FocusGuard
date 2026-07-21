@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-APP_DIR=".build/FocusGuard.app"
+APP_DIR=".build/FocusGuard_build.app"
 APP_NAME="FocusGuard"
 
 # ---- ensure .app exists ----
