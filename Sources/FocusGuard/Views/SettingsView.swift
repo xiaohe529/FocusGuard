@@ -122,8 +122,11 @@ struct SettingsView: View {
                     get: { state.delayedBlockLockScreen },
                     set: { newValue in
                         if newValue && !AXIsProcessTrusted() {
-                            state.lastError = "锁屏需要辅助功能权限：请在「系统设置 → 隐私与安全性 → 辅助功能」中授权 FocusGuard，然后再开启此选项"
-                            return
+                            // Trigger system prompt — opens System Settings to Accessibility pane.
+                            // Toggle still flips on; lockScreen() re-checks at execution time.
+                            let opts: NSDictionary = ["AXTrustedCheckOptionPrompt" as String: true]
+                            _ = AXIsProcessTrustedWithOptions(opts as CFDictionary)
+                            state.lastError = "已弹出系统授权框，请到「系统设置 → 隐私与安全性 → 辅助功能」中授权 FocusGuard。授权前锁屏不会生效。"
                         }
                         state.delayedBlockLockScreen = newValue
                     }

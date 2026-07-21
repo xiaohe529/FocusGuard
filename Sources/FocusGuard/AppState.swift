@@ -101,27 +101,32 @@ class AppState: ObservableObject {
             wifiBlocker.checkStatusQuiet()
         }
 
-        // Probe privileged helper
+        // Probe privileged helper — then restore blocking only if helper is already installed.
+        // Otherwise skip restore so first open doesn't trigger an admin password prompt.
+        // User clicks "开启屏蔽" to install helper and resume blocking.
         Task { @MainActor in
             self.helperInstalled = await HelperInstaller.isInstalledAndRunning()
             if !self.helperInstalled {
-                FocusLogger.info("Helper not installed — first privileged op will trigger install")
+                FocusLogger.info("Helper not installed — skipping blocking restore on launch")
+                if self.blockingEnabled {
+                    self.blockingEnabled = false
+                    self.appBlocker.setBlockingEnabled(false)
+                }
+                return
             }
-        }
-
-        if blockingEnabled {
-            let domains = blockRules.filter { $0.type == .website && $0.enabled }.map { $0.name }
+            guard self.blockingEnabled else { return }
+            let domains = self.blockRules.filter { $0.type == .website && $0.enabled }.map { $0.name }
             if !domains.isEmpty {
                 FocusLogger.info("Restoring website blocking for \(domains.count) domains")
                 Task {
                     do {
                         try await HostsBlocker.apply(domains: domains)
-                        lastError = nil
+                        self.lastError = nil
                     } catch {
                         FocusLogger.error("Restore blocking failed: \(error.localizedDescription)")
-                        lastError = "恢复屏蔽失败：\(error.localizedDescription)"
-                        blockingEnabled = false
-                        appBlocker.setBlockingEnabled(false)
+                        self.lastError = "恢复屏蔽失败：\(error.localizedDescription)"
+                        self.blockingEnabled = false
+                        self.appBlocker.setBlockingEnabled(false)
                     }
                 }
             }

@@ -29,6 +29,7 @@ cp "$BIN_SRC"    "$BUNDLE_DIR/Contents/MacOS/FocusGuard"
 cp "$HELPER_SRC" "$BUNDLE_DIR/Contents/Helpers/com.focusguard.helper"
 cp BundleResources/Info.plist                     "$BUNDLE_DIR/Contents/Info.plist"
 cp BundleResources/PkgInfo                         "$BUNDLE_DIR/Contents/PkgInfo"
+cp BundleResources/AppIcon.icns                    "$BUNDLE_DIR/Contents/Resources/AppIcon.icns"
 cp BundleResources/com.focusguard.helper.plist     "$BUNDLE_DIR/Contents/Resources/com.focusguard.helper.plist"
 
 chmod +x "$BUNDLE_DIR/Contents/MacOS/FocusGuard"
