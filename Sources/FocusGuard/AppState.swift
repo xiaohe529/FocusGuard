@@ -674,6 +674,20 @@ class AppState: ObservableObject {
                 pendingToggleAction = { [weak self] in Task { await self?.disableBlocking() } }
                 showPasswordSheet = true
             }
+        } else if !hasPassword {
+            // Proactively remind user to set a password before enabling blocking
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.icon = NSImage(systemSymbolName: "key.fill", accessibilityDescription: nil)
+            alert.messageText = "建议设置屏蔽密码"
+            alert.informativeText = "你还没有设置密码。没有密码的话，任何人点击「停止屏蔽」都可以直接关闭，之前忍住的冲动可能一秒破功。\n\n建议现在设置，给关闭屏蔽增加一点操作摩擦。"
+            alert.addButton(withTitle: "设置密码")
+            alert.addButton(withTitle: "稍后再说")
+            if alert.runModal() == .alertFirstButtonReturn {
+                showSettingsSheet = true
+                return
+            }
+            Task { await enableBlocking() }
         } else {
             Task { await enableBlocking() }
         }

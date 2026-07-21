@@ -227,9 +227,10 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.bordered)
                 }
-                Text("停止屏蔽时需要输入此密码。忘记时通过下方「高级」找回。")
+                Text("设置密码后，每次停止屏蔽都需要验证。目的是增加操作摩擦，让你在冲动想刷网站时多一道门槛——多犹豫 3 秒，可能就忍住了。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(10)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))

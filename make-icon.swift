@@ -6,27 +6,23 @@ func renderIcon(size: CGFloat) -> NSImage {
     image.lockFocus()
     let ctx = NSGraphicsContext.current!.cgContext
 
-    // Badge: smaller rounded rectangle, inset ~14% from each edge
-    let inset = size * 0.14
+    // Badge: rounded rectangle inset 8% from each edge
+    let inset = size * 0.08
     let badgeRect = CGRect(x: inset, y: inset, width: size - inset * 2, height: size - inset * 2)
     let badgeR = badgeRect.width * 0.224
     let badgePath = NSBezierPath(roundedRect: badgeRect, xRadius: badgeR, yRadius: badgeR)
 
-    // Subtle drop shadow
-    ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: size * 0.04),
-                  blur: size * 0.08,
-                  color: NSColor.black.withAlphaComponent(0.25).cgColor)
-    NSColor(red: 0.18, green: 0.35, blue: 0.62, alpha: 1.0).setFill()
+    // Solid WeChat Reading blue base (#00A3F5)
+    let baseColor = NSColor(red: 0.00, green: 0.639, blue: 0.961, alpha: 1.0)
+    baseColor.setFill()
     badgePath.fill()
-    ctx.restoreGState()
 
-    // Gradient overlay on badge
+    // Subtle gradient overlay for 3D depth — top-left slightly lighter
     let gradient = CGGradient(
         colorsSpace: CGColorSpace(name: CGColorSpace.sRGB),
         colors: [
-            NSColor(red: 0.20, green: 0.38, blue: 0.65, alpha: 1.0).cgColor,
-            NSColor(red: 0.16, green: 0.32, blue: 0.58, alpha: 1.0).cgColor,
+            NSColor(red: 0.10, green: 0.67, blue: 0.97, alpha: 1.0).cgColor,
+            NSColor(red: 0.00, green: 0.60, blue: 0.93, alpha: 1.0).cgColor,
         ] as CFArray,
         locations: [0, 1])!
     ctx.saveGState()
@@ -37,15 +33,16 @@ func renderIcon(size: CGFloat) -> NSImage {
         options: [])
     ctx.restoreGState()
 
-    // Inner highlight
-    let hl = NSBezierPath(roundedRect: badgeRect.insetBy(dx: badgeRect.width * 0.02, dy: badgeRect.height * 0.02),
-                           xRadius: badgeR * 0.85, yRadius: badgeR * 0.85)
-    hl.lineWidth = size * 0.005
-    NSColor.white.withAlphaComponent(0.10).setStroke()
+    // Top-left rim highlight — 3D edge light
+    let hlInset = badgeRect.width * 0.015
+    let hl = NSBezierPath(roundedRect: badgeRect.insetBy(dx: hlInset, dy: hlInset),
+                           xRadius: badgeR * 0.88, yRadius: badgeR * 0.88)
+    hl.lineWidth = size * 0.01
+    NSColor.white.withAlphaComponent(0.18).setStroke()
     hl.stroke()
 
-    // Small shield symbol inside badge
-    let symbolSize = badgeRect.width * 0.28
+    // Shield symbol — 55% of badge width
+    let symbolSize = badgeRect.width * 0.55
     let config = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: .medium)
     let symbol = NSImage(systemSymbolName: "lock.shield.fill", accessibilityDescription: nil)!
         .withSymbolConfiguration(config)!

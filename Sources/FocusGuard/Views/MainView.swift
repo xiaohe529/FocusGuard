@@ -109,6 +109,25 @@ struct MainView: View {
                 .padding(.bottom, 8)
             }
 
+            // Password not set reminder
+            if state.blockingEnabled && !state.hasPassword {
+                HStack(spacing: 6) {
+                    Image(systemName: "key.fill").foregroundStyle(.orange)
+                    Text("未设置屏蔽密码，点击「停止屏蔽」无需验证即可关闭。建议设置密码增加操作摩擦，防止一时冲动。")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                    Spacer()
+                    Button("设置") { state.showSettingsSheet = true }
+                        .buttonStyle(.plain)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                .padding(.horizontal)
+            }
+
             // Error banner
             if let error = state.lastError {
                 HStack(spacing: 6) {
