@@ -4,45 +4,30 @@ import Foundation
 func renderIcon(size: CGFloat) -> NSImage {
     let image = NSImage(size: NSSize(width: size, height: size))
     image.lockFocus()
-    let ctx = NSGraphicsContext.current!.cgContext
-    let rect = CGRect(x: 0, y: 0, width: size, height: size)
-
-    // macOS Big Sur style rounded rect
     let r = size * 0.224
+    let rect = CGRect(x: 0, y: 0, width: size, height: size)
     let path = NSBezierPath(roundedRect: rect, xRadius: r, yRadius: r)
 
-    // Subtle warm gray gradient — quiet, professional
-    let gradient = CGGradient(
-        colorsSpace: CGColorSpace(name: CGColorSpace.sRGB),
-        colors: [
-            NSColor(white: 0.28, alpha: 1.0).cgColor,
-            NSColor(white: 0.22, alpha: 1.0).cgColor,
-        ] as CFArray,
-        locations: [0, 1])!
-    ctx.saveGState()
-    path.addClip()
-    ctx.drawLinearGradient(gradient,
-        start: CGPoint(x: 0, y: size),
-        end: CGPoint(x: size, y: 0),
-        options: [])
-    ctx.restoreGState()
+    // Solid warm yellow — no gradient
+    NSColor(red: 0.92, green: 0.73, blue: 0.20, alpha: 1.0).setFill()
+    path.fill()
 
     // Thin inner border
     path.lineWidth = size * 0.008
-    NSColor.white.withAlphaComponent(0.10).setStroke()
+    NSColor.white.withAlphaComponent(0.15).setStroke()
     path.stroke()
 
-    // Small centered shield icon with comfortable negative space
-    let symbolSize = size * 0.40
-    let config = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: .regular)
+    // Small centered shield — 30% of icon size
+    let symbolSize = size * 0.30
+    let config = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: .medium)
     let symbol = NSImage(systemSymbolName: "lock.shield.fill", accessibilityDescription: nil)!
         .withSymbolConfiguration(config)!
     let symbolRect = NSRect(
         x: (size - symbolSize) / 2,
-        y: (size - symbolSize) / 2,
+        y: (size - symbolSize) / 2 + size * 0.01,
         width: symbolSize,
         height: symbolSize)
-    NSColor.white.withAlphaComponent(0.88).set()
+    NSColor.white.withAlphaComponent(0.90).set()
     symbol.draw(in: symbolRect, from: NSRect(origin: .zero, size: symbol.size),
                 operation: .sourceOver, fraction: 1.0)
 
