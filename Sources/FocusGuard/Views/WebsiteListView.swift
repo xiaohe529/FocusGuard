@@ -98,7 +98,7 @@ struct WebsiteListView: View {
             Text("还没有添加网站")
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
-            Text("输入域名或点击下方常用网站快速添加")
+            Text("输入域名或点击上方常用网站快速添加")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
             Spacer()
