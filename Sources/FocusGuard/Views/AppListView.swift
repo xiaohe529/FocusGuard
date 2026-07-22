@@ -19,17 +19,15 @@ struct AppListView: View {
                 TextField("输入 App 名称，如「微信」「浏览器」", text: $newApp)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { addApp() }
-                    .disabled(state.isLocked)
                 Button("添加", action: addApp)
                     .buttonStyle(AlwaysActiveButtonStyle(color: .blue))
-                    .disabled(newApp.trimmingCharacters(in: .whitespaces).isEmpty || state.isLocked)
+                    .disabled(newApp.trimmingCharacters(in: .whitespaces).isEmpty)
                 Button(action: loadInstalledApps) {
                     Label("选择", systemImage: "list.bullet")
                         .font(.body)
                 }
                 .buttonStyle(AlwaysActiveBorderlessStyle(color: .blue))
                 .help("从已安装 App 中选择")
-                .disabled(state.isLocked)
             }
             Text("屏蔽开启后，这些 App 会被强制关闭。")
                 .font(.caption).foregroundStyle(.secondary)
@@ -155,10 +153,17 @@ struct AppListView: View {
                     .lineLimit(1)
             }
             .toggleStyle(AlwaysActiveSwitchStyle())
-            .disabled(state.isLocked)
             Spacer()
             Button {
-                pendingDeleteID = r.id
+                if state.hasPassword {
+                    let ruleID = r.id
+                    state.pendingToggleAction = {
+                        pendingDeleteID = ruleID
+                    }
+                    state.showPasswordSheet = true
+                } else {
+                    pendingDeleteID = r.id
+                }
             } label: {
                 Image(systemName: "trash")
                     .foregroundStyle(.tertiary)
@@ -178,6 +183,13 @@ struct AppListView: View {
             let ruleID = r.id
 
             if !newState {
+                // Disabling: blocked during focus timer
+                if state.isLocked {
+                    revertingRuleID = ruleID
+                    rule.enabled.wrappedValue = oldValue
+                    state.lastError = "专注计时中，无法解除屏蔽规则"
+                    return
+                }
                 if state.hasPassword {
                     revertingRuleID = ruleID
                     rule.enabled.wrappedValue = oldValue
@@ -223,10 +235,6 @@ struct AppListView: View {
     }
 
     func addApp() {
-        guard !state.isLocked else {
-            state.lastError = "专注计时中，无法修改屏蔽规则"
-            return
-        }
         let clean = newApp.trimmingCharacters(in: .whitespaces)
         guard !clean.isEmpty,
               !state.blockRules.contains(where: { $0.name == clean && $0.type == .app })
@@ -237,10 +245,6 @@ struct AppListView: View {
     }
 
     func addFromPicker(_ appName: String) {
-        guard !state.isLocked else {
-            state.lastError = "专注计时中，无法修改屏蔽规则"
-            return
-        }
         guard !state.blockRules.contains(where: { $0.name == appName && $0.type == .app }) else { return }
         state.blockRules.append(BlockRule(name: appName, type: .app))
         Task { _ = await state.save() }

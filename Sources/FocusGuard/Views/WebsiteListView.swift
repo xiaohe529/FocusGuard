@@ -25,10 +25,9 @@ struct WebsiteListView: View {
                 TextField("输入域名，如 weibo.com", text: $newDomain)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { addDomain() }
-                    .disabled(state.isLocked)
                 Button("添加", action: addDomain)
                     .buttonStyle(AlwaysActiveButtonStyle(color: .blue))
-                    .disabled(newDomain.trimmingCharacters(in: .whitespaces).isEmpty || state.isLocked)
+                    .disabled(newDomain.trimmingCharacters(in: .whitespaces).isEmpty)
             }
 
             // Quick add pills
@@ -120,10 +119,17 @@ struct WebsiteListView: View {
                     .lineLimit(1)
             }
             .toggleStyle(AlwaysActiveSwitchStyle())
-            .disabled(state.isLocked)
             Spacer()
             Button {
-                pendingDeleteID = r.id
+                if state.hasPassword {
+                    let ruleID = r.id
+                    state.pendingToggleAction = {
+                        pendingDeleteID = ruleID
+                    }
+                    state.showPasswordSheet = true
+                } else {
+                    pendingDeleteID = r.id
+                }
             } label: {
                 Image(systemName: "trash")
                     .foregroundStyle(.tertiary)
@@ -144,6 +150,13 @@ struct WebsiteListView: View {
             let ruleID = r.id
 
             if !newState {
+                // Disabling: blocked during focus timer
+                if state.isLocked {
+                    revertingRuleID = ruleID
+                    rule.enabled.wrappedValue = oldValue
+                    state.lastError = "专注计时中，无法解除屏蔽规则"
+                    return
+                }
                 // Disabling (ON→OFF): requires FocusGuard password
                 if state.hasPassword {
                     // Revert toggle, ask password
@@ -190,10 +203,6 @@ struct WebsiteListView: View {
     }
 
     func addDomain() {
-        guard !state.isLocked else {
-            state.lastError = "专注计时中，无法修改屏蔽规则"
-            return
-        }
         let clean = newDomain.trimmingCharacters(in: .whitespaces)
         guard !clean.isEmpty,
               !state.blockRules.contains(where: { $0.name == clean && $0.type == .website })
@@ -204,10 +213,6 @@ struct WebsiteListView: View {
     }
 
     func addSuggestion(_ s: String) {
-        guard !state.isLocked else {
-            state.lastError = "专注计时中，无法修改屏蔽规则"
-            return
-        }
         guard !state.blockRules.contains(where: { $0.name == s && $0.type == .website })
         else { return }
         state.blockRules.append(BlockRule(name: s, type: .website))
