@@ -157,6 +157,7 @@ struct AppListView: View {
             Button {
                 if state.hasPassword {
                     let ruleID = r.id
+                    state.pendingActionLabel = "删除规则"
                     state.pendingToggleAction = {
                         pendingDeleteID = ruleID
                     }
@@ -193,6 +194,7 @@ struct AppListView: View {
                 if state.hasPassword {
                     revertingRuleID = ruleID
                     rule.enabled.wrappedValue = oldValue
+                    state.pendingActionLabel = "禁用规则"
                     state.pendingToggleAction = {
                         revertingRuleID = ruleID
                         rule.enabled.wrappedValue = newState

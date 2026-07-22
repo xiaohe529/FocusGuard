@@ -123,6 +123,7 @@ struct WebsiteListView: View {
             Button {
                 if state.hasPassword {
                     let ruleID = r.id
+                    state.pendingActionLabel = "删除规则"
                     state.pendingToggleAction = {
                         pendingDeleteID = ruleID
                     }
@@ -162,6 +163,7 @@ struct WebsiteListView: View {
                     // Revert toggle, ask password
                     revertingRuleID = ruleID
                     rule.enabled.wrappedValue = oldValue
+                    state.pendingActionLabel = "禁用规则"
                     state.pendingToggleAction = {
                         // Password verified — apply the disable
                         revertingRuleID = ruleID

@@ -187,10 +187,11 @@ struct MainView: View {
                 passwordInput = ""
                 passwordError = false
                 state.pendingToggleAction = nil
+                state.pendingActionLabel = ""
                 state.lastError = nil
             }) {
                 VStack(spacing: 16) {
-                    Text("输入密码解除屏蔽")
+                    Text("输入密码\(state.pendingActionLabel)")
                         .font(.headline)
                     SecureField("输入密码", text: $passwordInput)
                         .textFieldStyle(.roundedBorder)
@@ -206,6 +207,7 @@ struct MainView: View {
                             passwordInput = ""
                             passwordError = false
                             state.pendingToggleAction = nil
+                            state.pendingActionLabel = ""
                             state.lastError = nil
                         }
                         Button("确认") { verifyPassword() }
@@ -285,6 +287,7 @@ struct MainView: View {
             passwordError = false
             passwordInput = ""
             state.showPasswordSheet = false
+            state.pendingActionLabel = ""
             state.pendingToggleAction?()
         } else {
             passwordError = true

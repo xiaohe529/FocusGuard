@@ -13,6 +13,7 @@ class AppState: ObservableObject {
     @Published var hasPassword = false
     @Published var showPasswordSheet = false
     @Published var pendingToggleAction: (() -> Void)?
+    @Published var pendingActionLabel: String = ""
     @Published var isSaving = false
     @Published var lastError: String?
     @Published var isProcessing = false
@@ -677,6 +678,7 @@ class AppState: ObservableObject {
                 Task { await disableBlocking() }
             } else {
                 pendingToggleAction = { [weak self] in Task { await self?.disableBlocking() } }
+                pendingActionLabel = "解除屏蔽"
                 showPasswordSheet = true
             }
         } else if !hasPassword {
