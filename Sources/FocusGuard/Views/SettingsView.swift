@@ -18,6 +18,11 @@ struct SettingsView: View {
     @State private var revealedPassword: String?
     @State private var recoveryError: String = ""
 
+    @State private var deletePwdInput1 = ""
+    @State private var deletePwdInput2 = ""
+    @State private var deletePwdError: String = ""
+    @State private var deletePwdSuccess = false
+
     @FocusState private var passwordFieldFocus: PasswordField?
 
     enum PasswordField: Hashable { case old, new, confirm }
@@ -27,11 +32,15 @@ struct SettingsView: View {
             header
             Divider()
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 20) {
                     generalSection
+                    Divider().padding(.horizontal, -16)
                     delayedBlockSection
+                    Divider().padding(.horizontal, -16)
                     reminderSection
+                    Divider().padding(.horizontal, -16)
                     passwordSection
+                    Divider().padding(.horizontal, -16)
                     advancedSection
                 }
                 .padding()
@@ -39,7 +48,7 @@ struct SettingsView: View {
             Divider()
             footer
         }
-        .frame(width: 520, height: 640)
+        .frame(width: 520, height: 660)
         .sheet(isPresented: $showPasswordSheet, onDismiss: resetPasswordFields) {
             passwordSheet
         }
@@ -79,10 +88,15 @@ struct SettingsView: View {
     private var generalSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionHeader("通用")
-            VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
                 Toggle(isOn: $state.launchAtLogin) {
-                    Text("开机启动")
-                        .font(.subheadline)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("开机启动")
+                            .font(.subheadline)
+                        Text("登录时自动启动 FocusGuard")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .toggleStyle(.switch)
                 .onChange(of: state.launchAtLogin) { _, v in state.setLaunchAtLogin(v) }
@@ -90,6 +104,7 @@ struct SettingsView: View {
                 HStack {
                     Image(systemName: state.helperInstalled ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
                         .foregroundStyle(state.helperInstalled ? .green : .orange)
+                        .frame(width: 20)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("后台助手")
                             .font(.subheadline)
@@ -103,6 +118,7 @@ struct SettingsView: View {
                     if state.helperInstalled {
                         Button("卸载") { showUninstallConfirm = true }
                             .buttonStyle(.bordered)
+                            .controlSize(.small)
                             .disabled(isUninstalling)
                     } else {
                         Button {
@@ -111,12 +127,13 @@ struct SettingsView: View {
                             Text(state.isInstallingHelper ? "安装中…" : "安装")
                         }
                         .buttonStyle(.bordered)
+                        .controlSize(.small)
                         .disabled(isUninstalling || state.isInstallingHelper)
                     }
                 }
-                .padding(10)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
             }
+            .padding(12)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
         }
     }
 
@@ -125,13 +142,11 @@ struct SettingsView: View {
     private var delayedBlockSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionHeader("延时屏蔽")
-            VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
                 Toggle(isOn: Binding(
                     get: { state.delayedBlockLockScreen },
                     set: { newValue in
                         if newValue && !AXIsProcessTrusted() {
-                            // Trigger system prompt — opens System Settings to Accessibility pane.
-                            // Toggle still flips on; lockScreen() re-checks at execution time.
                             let opts: NSDictionary = ["AXTrustedCheckOptionPrompt" as String: true]
                             _ = AXIsProcessTrustedWithOptions(opts as CFDictionary)
                             state.lastError = "已弹出系统授权框，请到「系统设置 → 隐私与安全性 → 辅助功能」中授权 FocusGuard。授权前锁屏不会生效。"
@@ -140,8 +155,13 @@ struct SettingsView: View {
                         UserDefaults.standard.set(newValue, forKey: "delayedBlockLockScreen")
                     }
                 )) {
-                    Text("到期后锁屏")
-                        .font(.subheadline)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("到期后锁屏")
+                            .font(.subheadline)
+                        Text("延时屏蔽结束后自动锁定屏幕")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .toggleStyle(.switch)
 
@@ -162,7 +182,7 @@ struct SettingsView: View {
                 }
                 .toggleStyle(.switch)
             }
-            .padding(10)
+            .padding(12)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
         }
     }
@@ -172,7 +192,7 @@ struct SettingsView: View {
     private var reminderSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionHeader("定时提醒")
-            VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
                 Toggle(isOn: Binding(
                     get: { state.reminderEnabled },
                     set: { state.setReminderEnabled($0) }
@@ -199,7 +219,7 @@ struct SettingsView: View {
                             Text("\(state.reminderIntervalMinutes) 分钟")
                                 .font(.subheadline)
                                 .monospacedDigit()
-                                .frame(width: 100, alignment: .trailing)
+                                .frame(minWidth: 60, alignment: .trailing)
                         }
                     }
                     Text("屏蔽中、专注计时中、延时屏蔽中均不弹提醒。")
@@ -207,7 +227,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .padding(10)
+            .padding(12)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
         }
     }
@@ -217,10 +237,11 @@ struct SettingsView: View {
     private var passwordSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionHeader("密码")
-            VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Image(systemName: "key")
                         .foregroundStyle(.secondary)
+                        .frame(width: 20)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("屏蔽密码")
                             .font(.subheadline)
@@ -234,65 +255,110 @@ struct SettingsView: View {
                         showPasswordSheet = true
                     }
                     .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
                 Text("设置密码后，每次停止屏蔽都需要验证。目的是增加操作摩擦，让你在冲动想刷网站时多一道门槛——多犹豫 3 秒，可能就忍住了。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(10)
+            .padding(12)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
         }
     }
 
-    // MARK: - 高级(找回密码)
+    // MARK: - 高级
 
     private var advancedSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionHeader("高级")
-            DisclosureGroup("忘记密码？") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("为防止误操作，请输入恢复码 `123456789` 两次以查看当前屏蔽密码。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    SecureField("恢复码", text: $recoveryInput1)
-                        .textFieldStyle(.roundedBorder)
-                    SecureField("再次输入恢复码", text: $recoveryInput2)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit { recoverPassword() }
-                    Button {
-                        recoverPassword()
-                    } label: {
-                        Label("显示密码", systemImage: "eye")
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 4)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(recoveryInput1.isEmpty || recoveryInput1 != recoveryInput2)
-                    if !recoveryError.isEmpty {
-                        Text(recoveryError)
+            VStack(alignment: .leading, spacing: 8) {
+                DisclosureGroup {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("为防止误操作，请输入恢复码 `123456789` 两次以查看当前屏蔽密码。")
                             .font(.caption)
-                            .foregroundStyle(.red)
-                    }
-                    if let pwd = revealedPassword {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("当前屏蔽密码")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text(pwd)
-                                .font(.system(.body, design: .monospaced))
-                                .textSelection(.enabled)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        SecureField("恢复码", text: $recoveryInput1)
+                            .textFieldStyle(.roundedBorder)
+                        SecureField("再次输入恢复码", text: $recoveryInput2)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { recoverPassword() }
+                        Button {
+                            recoverPassword()
+                        } label: {
+                            Label("显示密码", systemImage: "eye")
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 4)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(8)
-                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                        .buttonStyle(.borderedProminent)
+                        .disabled(recoveryInput1.isEmpty || recoveryInput1 != recoveryInput2)
+                        if !recoveryError.isEmpty {
+                            Text(recoveryError)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                        if let pwd = revealedPassword {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("当前屏蔽密码")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(pwd)
+                                    .font(.system(.body, design: .monospaced))
+                                    .textSelection(.enabled)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(8)
+                            .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                        }
                     }
+                    .padding(.top, 8)
+                } label: {
+                    Text("忘记密码？")
+                        .font(.subheadline)
                 }
-                .padding(.top, 8)
+
+                Divider()
+
+                DisclosureGroup {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("删除密码后，停止屏蔽将不再需要验证。请输入恢复码 `123456789` 两次以确认删除。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        SecureField("恢复码", text: $deletePwdInput1)
+                            .textFieldStyle(.roundedBorder)
+                        SecureField("再次输入恢复码", text: $deletePwdInput2)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { deletePassword() }
+                        Button {
+                            deletePassword()
+                        } label: {
+                            Label("删除密码", systemImage: "trash")
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 4)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.red)
+                        .disabled(deletePwdInput1.isEmpty || deletePwdInput1 != deletePwdInput2)
+                        if !deletePwdError.isEmpty {
+                            Text(deletePwdError)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                        if deletePwdSuccess {
+                            Text("密码已删除")
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                        }
+                    }
+                    .padding(.top, 8)
+                } label: {
+                    Text("删除密码")
+                        .font(.subheadline)
+                }
             }
-            .font(.subheadline)
-            .padding(10)
+            .padding(12)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
         }
     }
@@ -375,7 +441,7 @@ struct SettingsView: View {
         showPasswordSheet = false
     }
 
-    // MARK: - 找回密码 / 卸载
+    // MARK: - 找回密码 / 删除密码 / 卸载
 
     private func recoverPassword() {
         guard recoveryInput1 == "123456789", recoveryInput1 == recoveryInput2 else {
@@ -390,6 +456,26 @@ struct SettingsView: View {
             revealedPassword = nil
             recoveryError = "尚未设置屏蔽密码"
         }
+    }
+
+    private func deletePassword() {
+        guard deletePwdInput1 == "123456789", deletePwdInput1 == deletePwdInput2 else {
+            deletePwdError = "恢复码不正确，需输入 123456789 且两次一致"
+            deletePwdSuccess = false
+            return
+        }
+        guard KeychainPassword.load() != nil else {
+            deletePwdError = "尚未设置屏蔽密码"
+            deletePwdSuccess = false
+            return
+        }
+        deletePwdError = ""
+        KeychainPassword.delete()
+        state.hasPassword = false
+        deletePwdSuccess = true
+        deletePwdInput1 = ""
+        deletePwdInput2 = ""
+        FocusLogger.info("Password deleted via settings")
     }
 
     private func performUninstall() async {
@@ -409,6 +495,5 @@ struct SettingsView: View {
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
             .font(.headline)
-            .padding(.bottom, 2)
     }
 }

@@ -100,7 +100,7 @@ struct AppListView: View {
             .padding()
             .frame(width: 500, height: 420)
         }
-        .alert("删除屏蔽规则？", isPresented: Binding(
+        .alert("删除条目？", isPresented: Binding(
             get: { pendingDeleteID != nil },
             set: { if !$0 { pendingDeleteID = nil } }
         )) {
@@ -157,7 +157,7 @@ struct AppListView: View {
             Button {
                 if state.hasPassword {
                     let ruleID = r.id
-                    state.pendingActionLabel = "删除规则"
+                    state.pendingActionLabel = "删除条目"
                     state.pendingToggleAction = {
                         pendingDeleteID = ruleID
                     }
@@ -194,7 +194,7 @@ struct AppListView: View {
                 if state.hasPassword {
                     revertingRuleID = ruleID
                     rule.enabled.wrappedValue = oldValue
-                    state.pendingActionLabel = "禁用规则"
+                    state.pendingActionLabel = "关闭条目"
                     state.pendingToggleAction = {
                         revertingRuleID = ruleID
                         rule.enabled.wrappedValue = newState

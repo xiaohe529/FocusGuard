@@ -68,7 +68,7 @@ struct WebsiteListView: View {
                 }
             }
         }
-        .alert("删除屏蔽规则？", isPresented: Binding(
+        .alert("删除条目？", isPresented: Binding(
             get: { pendingDeleteID != nil },
             set: { if !$0 { pendingDeleteID = nil } }
         )) {
@@ -126,7 +126,7 @@ struct WebsiteListView: View {
             Button {
                 if state.hasPassword {
                     let ruleID = r.id
-                    state.pendingActionLabel = "删除规则"
+                    state.pendingActionLabel = "删除条目"
                     state.pendingToggleAction = {
                         pendingDeleteID = ruleID
                     }
@@ -166,7 +166,7 @@ struct WebsiteListView: View {
                     // Revert toggle, ask password
                     revertingRuleID = ruleID
                     rule.enabled.wrappedValue = oldValue
-                    state.pendingActionLabel = "禁用规则"
+                    state.pendingActionLabel = "关闭条目"
                     state.pendingToggleAction = {
                         // Password verified — apply the disable
                         revertingRuleID = ruleID
