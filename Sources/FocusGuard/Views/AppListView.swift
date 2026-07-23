@@ -16,7 +16,7 @@ struct AppListView: View {
         VStack(alignment: .leading, spacing: 12) {
             // Input row
             HStack {
-                TextField("输入 App 名称，如「微信」「浏览器」", text: $newApp)
+                TextField("输入 App 精确名称，如「微信」「Google Chrome」", text: $newApp)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { addApp() }
                 Button("添加", action: addApp)

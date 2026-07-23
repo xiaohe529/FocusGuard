@@ -30,6 +30,9 @@ struct WebsiteListView: View {
                     .disabled(newDomain.trimmingCharacters(in: .whitespaces).isEmpty)
             }
 
+            Text("屏蔽开启后，名单中的网站会被拦截，无法访问。")
+                .font(.caption).foregroundStyle(.secondary)
+
             // Quick add pills
             if !filteredSuggestions.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
