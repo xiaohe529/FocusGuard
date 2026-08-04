@@ -11,7 +11,7 @@ struct WiFiView: View {
             VStack(spacing: 24) {
                 Image(systemName: state.wifiDisabled ? "network.slash" : "network")
                     .font(.system(size: 40))
-                    .foregroundStyle(state.wifiDisabled ? .red : .green)
+                    .foregroundStyle(state.wifiDisabled ? Color.focusActive : Color.focusAccent)
 
                 Text(state.wifiDisabled ? "网络已拦截" : "网络正常")
                     .font(.title2.bold())
@@ -32,7 +32,7 @@ struct WiFiView: View {
                         Spacer()
                         Text(state.wifiDisabled ? "已拦截" : "正常")
                             .font(.subheadline.bold())
-                            .foregroundStyle(state.wifiDisabled ? .red : .green)
+                            .foregroundStyle(state.wifiDisabled ? Color.focusActive : Color.focusAccent)
                     }
                     HStack {
                         Text("作用范围")
@@ -49,12 +49,11 @@ struct WiFiView: View {
                         .padding(.top, 4)
                     Text("注意：若网络通过 DHCP 自动下发 DNS（常见于公司 Wi-Fi），路由器下发的 DNS 会覆盖系统设置，此拦截可能无效。建议在「系统设置 → 网络 → Wi-Fi → 详细信息 → DNS」中手动指定 DNS 后再使用。")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.focusDanger)
                         .multilineTextAlignment(.leading)
                         .padding(.top, 2)
                 }
-                .padding()
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                .focusCard()
 
                 Button {
                     handleToggle()
@@ -64,7 +63,7 @@ struct WiFiView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                 }
-                .buttonStyle(AlwaysActiveButtonStyle(color: state.wifiDisabled ? .green : .red))
+                .buttonStyle(AlwaysActiveButtonStyle(color: state.wifiDisabled ? .focusActive : .focusDanger))
                 .disabled(state.wifiBlocker.isProcessing || state.isLocked)
             }
             .padding(.top, 8)

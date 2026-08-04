@@ -46,7 +46,7 @@ struct FocusTimerView: View {
         VStack(spacing: 16) {
             Image(systemName: "timer")
                 .font(.system(size: 40))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.focusAccent)
             Text("专注计时")
                 .font(.title2.bold())
             Text("开始计时后，所有屏蔽设置将被锁定，计时结束或紧急退出后才能修改。")
@@ -56,15 +56,14 @@ struct FocusTimerView: View {
                 .padding(.horizontal)
 
             presetAndCustomView(minutes: $focusCustomMinutes)
-                .padding()
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                .focusCard()
 
             if !state.blockingEnabled {
                 Text("屏蔽未开启，请先开启屏蔽再使用专注计时")
                     .font(.subheadline)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.focusDanger)
                     .padding()
-                    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                    .background(Color.focusDanger.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
             }
 
             Button {
@@ -74,7 +73,7 @@ struct FocusTimerView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
             }
-            .buttonStyle(AlwaysActiveButtonStyle(color: .green))
+            .buttonStyle(AlwaysActiveButtonStyle(color: .focusActive))
             .disabled(focusCustomMinutes < 1 || state.delayedBlockActive || !state.blockingEnabled)
         }
         .padding()
@@ -85,7 +84,7 @@ struct FocusTimerView: View {
         VStack(spacing: 16) {
             Image(systemName: "clock.badge.exclamationmark")
                 .font(.system(size: 40))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.focusAccent)
             Text("延时屏蔽")
                 .font(.title2.bold())
             Text("开始计时后自由浏览，倒计时结束自动开启屏蔽。")
@@ -97,13 +96,12 @@ struct FocusTimerView: View {
             if state.blockingEnabled {
                 Text("屏蔽已开启，无需延时屏蔽")
                     .font(.subheadline)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.focusDanger)
                     .padding()
-                    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                    .background(Color.focusDanger.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
             } else {
                 presetAndCustomView(minutes: $delayedCustomMinutes)
-                    .padding()
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                    .focusCard()
 
                 Text("到期锁屏、延长等选项见「设置 → 延时屏蔽」")
                     .font(.caption)
@@ -116,7 +114,7 @@ struct FocusTimerView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                 }
-                .buttonStyle(AlwaysActiveButtonStyle(color: .orange))
+                .buttonStyle(AlwaysActiveButtonStyle(color: .focusAccent))
                 .disabled(delayedCustomMinutes < 1 || state.blockingEnabled || state.focusTimerActive)
             }
         }
@@ -160,7 +158,7 @@ struct FocusTimerView: View {
         VStack(spacing: 16) {
             Image(systemName: "lock.fill")
                 .font(.system(size: 40))
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.focusActive)
             Text("专注计时中")
                 .font(.title2.bold())
             TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -179,8 +177,7 @@ struct FocusTimerView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .padding()
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            .focusCard()
 
             Button {
                 state.showEmergencyOverrideSheet = true
@@ -189,7 +186,7 @@ struct FocusTimerView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
             }
-            .buttonStyle(AlwaysActiveButtonStyle(color: .orange))
+            .buttonStyle(AlwaysActiveButtonStyle(color: .focusDanger))
             .disabled(state.emergencyUsesThisMonth >= AppState.monthlyEmergencyQuota)
         }
         .padding()
@@ -200,7 +197,7 @@ struct FocusTimerView: View {
         VStack(spacing: 16) {
             Image(systemName: "clock.badge.exclamationmark")
                 .font(.system(size: 40))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.focusAccent)
             Text("延时屏蔽倒计时")
                 .font(.title2.bold())
             TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -220,7 +217,7 @@ struct FocusTimerView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                 }
-                .buttonStyle(AlwaysActiveButtonStyle(color: .green))
+                .buttonStyle(AlwaysActiveButtonStyle(color: .focusActive))
 
                 Button {
                     state.cancelDelayedBlock()
@@ -240,7 +237,7 @@ struct FocusTimerView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 40))
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.focusDanger)
             Text("屏蔽未生效")
                 .font(.title2.bold())
             Text("到点了但未授权修改 hosts")
@@ -254,7 +251,7 @@ struct FocusTimerView: View {
             } else {
                 Text("延长次数已用完")
                     .font(.subheadline)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.focusDanger)
             }
 
             TimelineView(.periodic(from: .now, by: 1)) { _ in
@@ -270,7 +267,7 @@ struct FocusTimerView: View {
                 }
             }
             .padding()
-            .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+            .background(Color.focusDanger.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
 
             Button {
                 state.presentExtendAlert()
@@ -279,7 +276,7 @@ struct FocusTimerView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
             }
-            .buttonStyle(AlwaysActiveButtonStyle(color: .orange))
+            .buttonStyle(AlwaysActiveButtonStyle(color: .focusAccent))
         }
         .padding()
     }

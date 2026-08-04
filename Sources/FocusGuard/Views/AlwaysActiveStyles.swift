@@ -5,7 +5,7 @@ struct AlwaysActiveSwitchStyle: ToggleStyle {
     let onColor: Color
     let offColor: Color
 
-    init(onColor: Color = .blue, offColor: Color = Color(white: 0.6)) {
+    init(onColor: Color = .focusAccent, offColor: Color = Color(white: 0.6)) {
         self.onColor = onColor
         self.offColor = offColor
     }
@@ -34,7 +34,7 @@ struct AlwaysActiveSwitchStyle: ToggleStyle {
 struct AlwaysActiveButtonStyle: ButtonStyle {
     let color: Color
 
-    init(color: Color = .accentColor) {
+    init(color: Color = .focusAccent) {
         self.color = color
     }
 

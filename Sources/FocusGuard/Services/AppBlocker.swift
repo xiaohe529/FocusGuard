@@ -48,13 +48,17 @@ class AppBlocker: NSObject {
 
             let name = app.localizedName ?? ""
             let bundleID = app.bundleIdentifier ?? ""
+            let bundleFilename = app.bundleURL?.lastPathComponent.replacingOccurrences(of: ".app", with: "") ?? ""
             for target in blocked {
                 let clean = target.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !clean.isEmpty else { continue }
-                // Exact match (case-insensitive) on localizedName or bundleIdentifier
+                // Exact match (case-insensitive) on localizedName, bundleIdentifier, or bundle filename.
+                // Filename match is needed because loadInstalledApps() returns bundle filenames
+                // (e.g. "WeChat") which differ from localizedName ("微信") for many CJK apps.
                 let nameMatch = name.localizedCaseInsensitiveCompare(clean) == .orderedSame
                 let bundleMatch = bundleID.localizedCaseInsensitiveCompare(clean) == .orderedSame
-                guard nameMatch || bundleMatch else { continue }
+                let filenameMatch = bundleFilename.localizedCaseInsensitiveCompare(clean) == .orderedSame
+                guard nameMatch || bundleMatch || filenameMatch else { continue }
                 let pid = app.processIdentifier
                 app.terminate()
                 sleep(2)

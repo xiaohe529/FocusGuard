@@ -26,15 +26,18 @@ struct WebsiteListView: View {
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { addDomain() }
                 Button("添加", action: addDomain)
-                    .buttonStyle(AlwaysActiveButtonStyle(color: .blue))
+                    .buttonStyle(AlwaysActiveButtonStyle(color: .focusAccent))
                     .disabled(newDomain.trimmingCharacters(in: .whitespaces).isEmpty)
             }
 
             Text("屏蔽开启后，名单中的网站会被拦截，无法访问。")
                 .font(.caption).foregroundStyle(.secondary)
 
-            // Quick add pills
+            // Quick add pills — clearly labeled as suggestions, not the current list
             if !filteredSuggestions.isEmpty {
+                Text("推荐屏蔽网站（点击添加）")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
                         ForEach(filteredSuggestions, id: \.self) { s in
@@ -101,7 +104,7 @@ struct WebsiteListView: View {
             Text("还没有添加网站")
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
-            Text("输入域名或点击上方常用网站快速添加")
+            Text("输入域名或点击上方推荐屏蔽网站快速添加")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
             Spacer()
@@ -140,7 +143,7 @@ struct WebsiteListView: View {
                     .padding(4)
             }
             .buttonStyle(AlwaysActiveBorderlessStyle())
-            .disabled(state.isLocked)
+            .disabled(state.isLocked || state.blockingEnabled)
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 4)
@@ -154,11 +157,11 @@ struct WebsiteListView: View {
             let ruleID = r.id
 
             if !newState {
-                // Disabling: blocked during focus timer
-                if state.isLocked {
+                // Disabling: blocked during focus timer or while blocking is active
+                if state.isLocked || state.blockingEnabled {
                     revertingRuleID = ruleID
                     rule.enabled.wrappedValue = oldValue
-                    state.lastError = "专注计时中，无法解除屏蔽规则"
+                    state.lastError = state.blockingEnabled ? "屏蔽开启中，名单已锁定，无法关闭规则" : "专注计时中，无法解除屏蔽规则"
                     return
                 }
                 // Disabling (ON→OFF): requires FocusGuard password

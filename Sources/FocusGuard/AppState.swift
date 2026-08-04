@@ -37,9 +37,20 @@ class AppState: ObservableObject {
     @Published var reminderEnabled = false
     @Published var reminderIntervalMinutes = 30
     @Published var showSettingsSheet = false
+    @Published var coolingEnabled = false
+    @Published var coolingMinutes = 5
+    @Published var coolDownEndsAt: Date? = nil
+    @Published var remindFocusTimerAfterBlock = true
+    @Published var remindDelayedBlockAfterUnblock = true
 
     private var reminderTask: Task<Void, Never>?
     private var reminderAlertInFlight = false
+
+    /// Remaining cooldown after blocking was enabled; 0 when no cooldown is active.
+    var coolDownRemaining: TimeInterval {
+        guard let end = coolDownEndsAt else { return 0 }
+        return max(0, end.timeIntervalSinceNow)
+    }
 
     /// Callback for StatusBarManager to auto-update icon on state changes
     var onBlockingStateChanged: (() -> Void)?
@@ -136,6 +147,13 @@ class AppState: ObservableObject {
         reminderIntervalMinutes = storedInterval ?? 30
         if reminderIntervalMinutes < 1 { reminderIntervalMinutes = 1 }
         startReminderLoop()
+
+        coolingEnabled = UserDefaults.standard.bool(forKey: "coolingEnabled")
+        let storedCooling = UserDefaults.standard.object(forKey: "coolingMinutes") as? Int
+        coolingMinutes = storedCooling ?? 5
+        if coolingMinutes < 1 { coolingMinutes = 1 }
+        remindFocusTimerAfterBlock = UserDefaults.standard.object(forKey: "remindFocusTimerAfterBlock") as? Bool ?? true
+        remindDelayedBlockAfterUnblock = UserDefaults.standard.object(forKey: "remindDelayedBlockAfterUnblock") as? Bool ?? true
 
         FocusLogger.info("AppState load complete — blockingEnabled=\(blockingEnabled) hasPassword=\(hasPassword)")
     }
@@ -309,25 +327,28 @@ class AppState: ObservableObject {
         focusTimerEngine.stop()
         saveFocusTimer()
 
-        if delayedBlockAllowExtension {
-            // Show choice dialog: block now or extend
+        // Lock screen at expiry regardless of whether the subsequent admin auth succeeds —
+        // the user's intent with delayedBlockLockScreen is "lock when timer ends", not "lock
+        // only if blocking also installs cleanly". Doing this before the alert means the user
+        // returns to an already-locked screen and then sees the choice dialog.
+        if delayedBlockLockScreen {
+            lockScreen()
+        }
+
+        // Extension is only useful when the user still has retries left. Once they've used
+        // their one extension, the next expiry auto-blocks — no point popping an alert
+        // whose only button is "立即屏蔽".
+        let canStillExtend = delayedBlockAllowExtension && delayedBlockRetryCount < 1
+
+        if canStillExtend {
             let alert = NSAlert()
             alert.alertStyle = .warning
             alert.icon = NSImage(systemSymbolName: "clock.badge.exclamationmark", accessibilityDescription: nil)
             alert.messageText = "延时屏蔽时间到"
-            var info = "倒计时已结束。"
-            if delayedBlockRetryCount < 1 {
-                info += "（可延长 1 次）"
-            } else {
-                info += "（延长次数已用完）"
-            }
-            alert.informativeText = info
+            alert.informativeText = "倒计时已结束。（可延长 1 次）"
             alert.addButton(withTitle: "立即屏蔽")
-            if delayedBlockRetryCount < 1 {
-                alert.addButton(withTitle: "再等 5 分钟")
-                alert.addButton(withTitle: "再等 10 分钟")
-            }
-            alert.addButton(withTitle: "取消")
+            alert.addButton(withTitle: "再等 5 分钟")
+            alert.addButton(withTitle: "再等 10 分钟")
 
             let response = alert.runModal()
             let idx = Int(response.rawValue) - 1000
@@ -335,15 +356,16 @@ class AppState: ObservableObject {
             switch idx {
             case 0:
                 Task { await attemptDelayedBlockEnable(initialAlert: true) }
-            case 1 where delayedBlockRetryCount < 1:
+            case 1:
                 extendDelayedBlock(minutes: 5)
-            case 2 where delayedBlockRetryCount < 1:
+            case 2:
                 extendDelayedBlock(minutes: 10)
             default:
-                break
+                // ESC / window close — treat as 立即屏蔽 to avoid escape loophole
+                Task { await attemptDelayedBlockEnable(initialAlert: true) }
             }
         } else {
-            // No extension: directly block
+            // Either extension disabled, or extension used up — auto-block, no alert.
             Task { await attemptDelayedBlockEnable(initialAlert: true) }
         }
     }
@@ -359,22 +381,23 @@ class AppState: ObservableObject {
     }
 
     private func lockScreen() {
-        // CGEvent posting requires Accessibility permission. Without it, the
-        // shortcut is silently dropped — surface the failure to the user.
-        guard AXIsProcessTrusted() else {
-            FocusLogger.error("lockScreen: Accessibility permission missing — Control+Command+Q will not fire")
-            lastError = "锁屏失败：请在「系统设置 → 隐私与安全性 → 辅助功能」中授权 FocusGuard"
-            return
+        // Launch ScreenSaverEngine instead of synthesizing Control+Command+Q via CGEvent.
+        // Why: CGEvent requires Accessibility permission, and ad-hoc signed binaries
+        // get a fresh cdhash every rebuild — TCC treats each rebuild as a new app and
+        // silently revokes the grant, so the keyboard shortcut never fires.
+        // ScreenSaverEngine needs no permission and works on all macOS versions;
+        // lock depends on the user's "require password after screensaver" setting,
+        // which is the default.
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        task.arguments = ["-a", "ScreenSaverEngine"]
+        do {
+            try task.run()
+            FocusLogger.info("lockScreen: ScreenSaverEngine launched")
+        } catch {
+            FocusLogger.error("lockScreen: failed to launch ScreenSaverEngine — \(error.localizedDescription)")
+            lastError = "锁屏失败：无法启动 ScreenSaverEngine（\(error.localizedDescription)）"
         }
-        // Simulate Control+Command+Q (macOS lock screen shortcut)
-        let keyDown = CGEvent(keyboardEventSource: nil, virtualKey: 0x0C, keyDown: true)
-        keyDown?.flags = [.maskControl, .maskCommand]
-        keyDown?.post(tap: .cghidEventTap)
-
-        let keyUp = CGEvent(keyboardEventSource: nil, virtualKey: 0x0C, keyDown: false)
-        keyUp?.post(tap: .cghidEventTap)
-
-        FocusLogger.info("lockScreen: screen locked via keyboard shortcut")
     }
 
     func cancelDelayedBlock() {
@@ -399,9 +422,8 @@ class AppState: ObservableObject {
             delayedBlockNextRetryAt = nil
             stopPendingAlertLoop()
             saveFocusTimer()
-            if delayedBlockLockScreen {
-                lockScreen()
-            }
+            // Note: lockScreen() (if enabled) already fired at expiry in delayedBlockExpired(),
+            // before this alert was shown. Don't re-lock here.
             return
         }
         // Failed — user cancelled admin prompt
@@ -417,8 +439,9 @@ class AppState: ObservableObject {
     }
 
     /// Extend the timer after expiry (user picked 5 or 10 min). Consumes one of 2 allowed extensions.
+    /// Called from both natural-expiry path (delayedBlockExpired → user picks "再等 5 分钟")
+    /// and pending-auth path (presentExtendAlert → user picks "再等 5 分钟").
     func extendDelayedBlock(minutes: Int) {
-        guard delayedBlockPendingAuth else { return }
         guard delayedBlockRetryCount < 1 else { return }
         delayedBlockRetryCount += 1
         delayedBlockPendingAuth = false
@@ -470,10 +493,8 @@ class AppState: ObservableObject {
             alert.addButton(withTitle: "再等 5 分钟")
             alert.addButton(withTitle: "再等 10 分钟")
             alert.addButton(withTitle: "立即授权")
-            alert.addButton(withTitle: "取消")
         } else {
             alert.addButton(withTitle: "立即授权")
-            alert.addButton(withTitle: "取消")
         }
 
         let response = alert.runModal()
@@ -487,12 +508,12 @@ class AppState: ObservableObject {
             case 0: extendDelayedBlock(minutes: 5)
             case 1: extendDelayedBlock(minutes: 10)
             case 2: retryDelayedBlockNow()
-            default: break  // 取消 — leave pending
+            default: retryDelayedBlockNow()  // ESC / close — fall through to retry, 30s loop will catch if still pending
             }
         } else {
             switch idx {
             case 0: retryDelayedBlockNow()
-            default: break
+            default: retryDelayedBlockNow()
             }
         }
 
@@ -644,9 +665,24 @@ class AppState: ObservableObject {
         onBlockingStateChanged?()
         restartReminderIfNeeded()
         _ = await save()
+        startBlockingCooldown()
+        presentFocusTimerReminder()
+    }
+
+    /// Start the cooldown timer after blocking is enabled (if enabled in settings).
+    private func startBlockingCooldown() {
+        if coolingEnabled && coolingMinutes > 0 {
+            coolDownEndsAt = Date().addingTimeInterval(TimeInterval(coolingMinutes * 60))
+        } else {
+            coolDownEndsAt = nil
+        }
     }
 
     func disableBlocking() async {
+        guard coolDownRemaining <= 0 else {
+            lastError = "冷静期内无法解除屏蔽，剩余 \(Int(coolDownRemaining) / 60) 分 \(Int(coolDownRemaining) % 60) 秒"
+            return
+        }
         FocusLogger.info("disableBlocking")
         isProcessing = true
         onBlockingStateChanged?()
@@ -664,11 +700,17 @@ class AppState: ObservableObject {
         }
         isProcessing = false
         onBlockingStateChanged?()
+        coolDownEndsAt = nil
         restartReminderIfNeeded()
         _ = await save()
+        presentDelayedBlockReminder()
     }
 
     func toggleBlocking() {
+        guard coolDownRemaining <= 0 else {
+            lastError = "冷静期内无法解除屏蔽，剩余 \(Int(coolDownRemaining) / 60) 分 \(Int(coolDownRemaining) % 60) 秒"
+            return
+        }
         guard !isLocked else {
             lastError = "专注计时中，无法修改屏蔽状态"
             return
@@ -770,6 +812,19 @@ class AppState: ObservableObject {
         restartReminderIfNeeded()
     }
 
+    func setCoolingEnabled(_ enabled: Bool) {
+        coolingEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: "coolingEnabled")
+        if !enabled { coolDownEndsAt = nil }
+    }
+
+    func setCoolingMinutes(_ minutes: Int) {
+        var v = minutes
+        if v < 1 { v = 1 }
+        coolingMinutes = v
+        UserDefaults.standard.set(v, forKey: "coolingMinutes")
+    }
+
     private func startReminderLoop() {
         stopReminderLoop()
         guard reminderEnabled else { return }
@@ -827,6 +882,45 @@ class AppState: ObservableObject {
             setReminderEnabled(false)
         default:
             break
+        }
+    }
+
+    // MARK: - 屏蔽后 / 解除后提醒
+
+    private func presentFocusTimerReminder() {
+        guard remindFocusTimerAfterBlock else { return }
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.icon = NSImage(systemSymbolName: "timer", accessibilityDescription: nil)
+        alert.messageText = "屏蔽已开启"
+        alert.informativeText = "要设置专注计时吗？计时期间屏蔽设置将被锁定，结束后才能修改。"
+        alert.addButton(withTitle: "25 分钟")
+        alert.addButton(withTitle: "30 分钟")
+        alert.addButton(withTitle: "60 分钟")
+        alert.addButton(withTitle: "取消")
+        let idx = Int(alert.runModal().rawValue) - 1000
+        let presets = [25, 30, 60]
+        if idx >= 0 && idx < presets.count {
+            startFocusTimer(minutes: presets[idx])
+        }
+    }
+
+    private func presentDelayedBlockReminder() {
+        guard remindDelayedBlockAfterUnblock else { return }
+        guard !focusTimerActive else { return }
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.icon = NSImage(systemSymbolName: "clock.badge.exclamationmark", accessibilityDescription: nil)
+        alert.messageText = "屏蔽已停止"
+        alert.informativeText = "要设置延时屏蔽吗？倒计时结束后将自动重新开启屏蔽。"
+        alert.addButton(withTitle: "5 分钟")
+        alert.addButton(withTitle: "10 分钟")
+        alert.addButton(withTitle: "30 分钟")
+        alert.addButton(withTitle: "取消")
+        let idx = Int(alert.runModal().rawValue) - 1000
+        let presets = [5, 10, 30]
+        if idx >= 0 && idx < presets.count {
+            startDelayedBlock(minutes: presets[idx])
         }
     }
 }

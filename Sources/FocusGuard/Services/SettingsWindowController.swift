@@ -8,13 +8,13 @@ class SettingsWindowController: NSWindowController {
 
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 700),
+            contentRect: NSRect(x: 0, y: 0, width: 760, height: 820),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: true
         )
         window.title = "FocusGuard"
-        window.minSize = NSSize(width: 500, height: 500)
+        window.minSize = NSSize(width: 640, height: 640)
         window.isReleasedWhenClosed = false
         window.setFrameAutosaveName("FocusGuardSettings")
 
@@ -24,16 +24,21 @@ class SettingsWindowController: NSWindowController {
     }
 
     func setContentView<V: View>(_ view: V) {
-        let vc = NSHostingController(rootView: view.frame(minWidth: 500, minHeight: 500))
+        let vc = NSHostingController(rootView: view.frame(minWidth: 640, minHeight: 640))
         contentViewController = vc
         hostedView = vc
-        window?.minSize = NSSize(width: 500, height: 500)
+        window?.minSize = NSSize(width: 640, height: 640)
     }
 
     func show() {
         NSApp.activate(ignoringOtherApps: true)
         window?.center()
         window?.makeKeyAndOrderFront(nil)
+        // Don't auto-focus the first text field (e.g. the domain input on the website tab)
+        // when the window opens. Defer to the next runloop so SwiftUI has laid out first.
+        DispatchQueue.main.async { [weak self] in
+            self?.window?.makeFirstResponder(nil)
+        }
     }
 
     func hide() {

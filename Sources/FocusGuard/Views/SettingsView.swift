@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-import ApplicationServices
 
 struct SettingsView: View {
     @ObservedObject var state: AppState
@@ -23,6 +22,10 @@ struct SettingsView: View {
     @State private var deletePwdError: String = ""
     @State private var deletePwdSuccess = false
 
+    @State private var updateStatus: UpdateStatus?
+    @State private var isCheckingUpdate = false
+    @State private var isDownloading = false
+
     @FocusState private var passwordFieldFocus: PasswordField?
 
     enum PasswordField: Hashable { case old, new, confirm }
@@ -39,9 +42,15 @@ struct SettingsView: View {
                     Divider().padding(.horizontal, -16)
                     reminderSection
                     Divider().padding(.horizontal, -16)
+                    coolingSection
+                    Divider().padding(.horizontal, -16)
+                    reminderAfterBlockSection
+                    Divider().padding(.horizontal, -16)
                     passwordSection
                     Divider().padding(.horizontal, -16)
                     advancedSection
+                    Divider().padding(.horizontal, -16)
+                    updateSection
                 }
                 .padding()
             }
@@ -132,8 +141,7 @@ struct SettingsView: View {
                     }
                 }
             }
-            .padding(12)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            .focusCard()
         }
     }
 
@@ -146,11 +154,6 @@ struct SettingsView: View {
                 Toggle(isOn: Binding(
                     get: { state.delayedBlockLockScreen },
                     set: { newValue in
-                        if newValue && !AXIsProcessTrusted() {
-                            let opts: NSDictionary = ["AXTrustedCheckOptionPrompt" as String: true]
-                            _ = AXIsProcessTrustedWithOptions(opts as CFDictionary)
-                            state.lastError = "已弹出系统授权框，请到「系统设置 → 隐私与安全性 → 辅助功能」中授权 FocusGuard。授权前锁屏不会生效。"
-                        }
                         state.delayedBlockLockScreen = newValue
                         UserDefaults.standard.set(newValue, forKey: "delayedBlockLockScreen")
                     }
@@ -182,8 +185,7 @@ struct SettingsView: View {
                 }
                 .toggleStyle(.switch)
             }
-            .padding(12)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            .focusCard()
         }
     }
 
@@ -227,8 +229,92 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .padding(12)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            .focusCard()
+        }
+    }
+
+    // MARK: - 冷静期
+
+    private var coolingSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("冷静期")
+            VStack(alignment: .leading, spacing: 12) {
+                Toggle(isOn: Binding(
+                    get: { state.coolingEnabled },
+                    set: { state.setCoolingEnabled($0) }
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("屏蔽后冷静期")
+                            .font(.subheadline)
+                        Text("开启屏蔽后，冷静期内无法解除屏蔽")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .toggleStyle(.switch)
+
+                if state.coolingEnabled {
+                    HStack {
+                        Text("冷静期时长")
+                            .font(.subheadline)
+                        Spacer()
+                        Stepper(value: Binding(
+                            get: { state.coolingMinutes },
+                            set: { state.setCoolingMinutes($0) }
+                        ), in: 1...240, step: 5) {
+                            Text("\(state.coolingMinutes) 分钟")
+                                .font(.subheadline)
+                                .monospacedDigit()
+                                .frame(minWidth: 60, alignment: .trailing)
+                        }
+                    }
+                }
+            }
+            .focusCard()
+        }
+    }
+
+    // MARK: - 屏蔽提醒
+
+    private var reminderAfterBlockSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("屏蔽提醒")
+            VStack(alignment: .leading, spacing: 12) {
+                Toggle(isOn: Binding(
+                    get: { state.remindFocusTimerAfterBlock },
+                    set: {
+                        state.remindFocusTimerAfterBlock = $0
+                        UserDefaults.standard.set($0, forKey: "remindFocusTimerAfterBlock")
+                    }
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("屏蔽后提醒专注计时")
+                            .font(.subheadline)
+                        Text("开启屏蔽后，弹窗询问是否设置专注计时")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .toggleStyle(.switch)
+
+                Toggle(isOn: Binding(
+                    get: { state.remindDelayedBlockAfterUnblock },
+                    set: {
+                        state.remindDelayedBlockAfterUnblock = $0
+                        UserDefaults.standard.set($0, forKey: "remindDelayedBlockAfterUnblock")
+                    }
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("解除屏蔽后提醒延时屏蔽")
+                            .font(.subheadline)
+                        Text("解除屏蔽后，弹窗询问是否设置延时屏蔽")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .toggleStyle(.switch)
+            }
+            .focusCard()
         }
     }
 
@@ -257,13 +343,12 @@ struct SettingsView: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                 }
-                Text("设置密码后，每次停止屏蔽都需要验证。目的是增加操作摩擦，让你在冲动想刷网站时多一道门槛——多犹豫 3 秒，可能就忍住了。")
+                Text("设置密码后，停止屏蔽需验证密码，为冲动解除增加一道门槛。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(12)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            .focusCard()
         }
     }
 
@@ -358,8 +443,92 @@ struct SettingsView: View {
                         .font(.subheadline)
                 }
             }
-            .padding(12)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            .focusCard()
+        }
+    }
+
+    // MARK: - 软件更新
+
+    private var updateSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("软件更新")
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("当前版本 \(Updater.currentVersion)")
+                            .font(.subheadline)
+                        Text(updateStatusText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if isCheckingUpdate {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Button("检查更新") {
+                            Task { await checkForUpdates() }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(isDownloading)
+                    }
+                }
+                if case .available(let version, let downloadURL, let releaseURL) = updateStatus {
+                    Button {
+                        if let downloadURL {
+                            Task { await downloadAndOpen(downloadURL) }
+                        } else {
+                            NSWorkspace.shared.open(releaseURL)
+                        }
+                    } label: {
+                        Label(
+                            isDownloading ? "下载中…" : (downloadURL != nil ? "下载 v\(version)" : "前往发布页"),
+                            systemImage: downloadURL != nil ? "arrow.down.circle" : "arrow.up.right.square"
+                        )
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(isDownloading)
+                }
+            }
+            .focusCard()
+        }
+    }
+
+    private var updateStatusText: String {
+        switch updateStatus {
+        case nil:
+            return "从 GitHub 检查是否有新版本"
+        case .upToDate?:
+            return "已是最新版本"
+        case .available(let version, _, _)?:
+            return "发现新版本 v\(version)"
+        case .failed(let message)?:
+            return message
+        }
+    }
+
+    private func checkForUpdates() async {
+        isCheckingUpdate = true
+        updateStatus = nil
+        let status = await Updater.checkForUpdates()
+        updateStatus = status
+        isCheckingUpdate = false
+    }
+
+    private func downloadAndOpen(_ url: URL) async {
+        isDownloading = true
+        defer { isDownloading = false }
+        let downloads = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
+            .appendingPathComponent(url.lastPathComponent)
+        do {
+            try await Updater.download(url, to: downloads)
+            NSWorkspace.shared.open(downloads)
+        } catch {
+            updateStatus = .failed("下载失败：\(error.localizedDescription)")
         }
     }
 

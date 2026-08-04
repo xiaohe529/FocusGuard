@@ -25,7 +25,7 @@ for ARCH in "${ARCHS[@]}"; do
     BUILT_BINS+=(".build/$ARCH/$BUILD_CONFIG/FocusGuardHelper")
 done
 
-BUNDLE_DIR=".build/FocusGuard_build.app"
+BUNDLE_DIR=".build/FocusGuard.app"
 ARM_BIN=".build/arm64-apple-macosx/$BUILD_CONFIG/FocusGuard"
 ARM_HELPER=".build/arm64-apple-macosx/$BUILD_CONFIG/FocusGuardHelper"
 X86_BIN=".build/x86_64-apple-macosx/$BUILD_CONFIG/FocusGuard"

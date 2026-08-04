@@ -14,84 +14,121 @@ struct MainView: View {
     @FocusState private var unlockFocus: UnlockField?
     @FocusState private var emergencyFocus: Bool
 
-    let tabLabels = ["网站屏蔽", "App屏蔽", "网络控制", "专注计时"]
-    let tabIcons = ["globe", "xmark.app", "network.slash", "timer"]
+    let tabLabels = ["网站屏蔽", "App屏蔽", "专注计时", "网络控制"]
+    let tabIcons = ["globe", "xmark.app", "timer", "network.slash"]
 
     var body: some View {
         VStack(spacing: 0) {
-            // Tab bar — fixed at top
-            HStack(spacing: 0) {
-                ForEach(0..<4, id: \.self) { i in
+            // Tab bar — soft segmented style
+            HStack(spacing: 2) {
+                ForEach(0..<tabLabels.count, id: \.self) { i in
                     Button {
                         selectedTab = i
                     } label: {
                         Label(tabLabels[i], systemImage: tabIcons[i])
                             .font(.body)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 12)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
+                            .foregroundStyle(selectedTab == i ? .primary : .secondary)
+                            .background(
+                                selectedTab == i ? Color.secondary.opacity(0.15) : Color.clear,
+                                in: Capsule()
+                            )
+                            .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(selectedTab == i ? .primary : .secondary)
-                    .background(selectedTab == i ? Color.blue.opacity(0.1) : Color.clear)
-                    .overlay(alignment: .bottom) {
-                        if selectedTab == i {
-                            Rectangle().fill(.blue).frame(height: 2)
-                        }
-                    }
                 }
             }
-            .padding(.top, 16)
+            .padding(4)
+            .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
 
             Divider()
 
-            // Focus-timer / delayed-block banner
+            // Status banners (low-key, for focus-timer / delayed-block states)
             if state.focusTimerActive {
-                HStack(spacing: 8) {
-                    Image(systemName: "lock.fill").foregroundStyle(.red)
+                statusBanner(
+                    icon: "lock.fill",
+                    color: .focusActive,
+                    actionTitle: "紧急退出",
+                    actionColor: .focusDanger,
+                    actionDisabled: state.emergencyUsesThisMonth >= AppState.monthlyEmergencyQuota,
+                    action: { state.showEmergencyOverrideSheet = true }
+                ) {
                     TimelineView(.periodic(from: .now, by: 1)) { _ in
                         Text("专注计时中 · 剩余 \(remainingString(end: state.focusTimerEnd))")
                             .font(.subheadline)
+                            .monospacedDigit()
                     }
-                    Spacer()
-                    Button("紧急退出") { state.showEmergencyOverrideSheet = true }
-                        .buttonStyle(AlwaysActiveBorderlessStyle(color: .orange))
-                        .font(.caption)
-                        .disabled(state.emergencyUsesThisMonth >= AppState.monthlyEmergencyQuota)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                .padding(.horizontal)
-                .padding(.top, 4)
             } else if state.delayedBlockActive {
-                HStack(spacing: 8) {
-                    Image(systemName: "clock.badge.exclamationmark").foregroundStyle(.orange)
+                statusBanner(
+                    icon: "clock.badge.exclamationmark",
+                    color: .focusAccent,
+                    actionTitle: nil,
+                    actionColor: nil,
+                    actionDisabled: false,
+                    action: {}
+                ) {
                     TimelineView(.periodic(from: .now, by: 1)) { _ in
                         Text("延时屏蔽倒计时 · 剩余 \(remainingString(end: state.delayedBlockEnd)) · 到点自动屏蔽")
                             .font(.subheadline)
+                            .monospacedDigit()
                     }
-                    Spacer()
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                .padding(.horizontal)
-                .padding(.top, 4)
             } else if state.delayedBlockPendingAuth {
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                statusBanner(
+                    icon: "exclamationmark.triangle.fill",
+                    color: .focusDanger,
+                    actionTitle: "去授权",
+                    actionColor: .focusDanger,
+                    actionDisabled: false,
+                    action: { selectedTab = 2 }
+                ) {
                     Text("屏蔽未生效 · 到点未授权")
                         .font(.subheadline)
-                    Spacer()
-                    Button("去授权") { selectedTab = 3 }
-                        .buttonStyle(AlwaysActiveBorderlessStyle(color: .red))
+                }
+            }
+
+            // Password not set reminder (low-key)
+            if state.blockingEnabled && !state.hasPassword {
+                HStack(spacing: 6) {
+                    Image(systemName: "key.fill").foregroundStyle(Color.focusDanger)
+                    Text("未设置屏蔽密码，停止屏蔽无需验证。建议设置，为冲动解除增加一道门槛。")
                         .font(.caption)
+                        .foregroundStyle(Color.focusDanger)
+                    Spacer()
+                    Button("设置") { state.showSettingsSheet = true }
+                        .buttonStyle(.plain)
+                        .font(.caption)
+                        .foregroundStyle(Color.focusDanger)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                .background(Color.focusDanger.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
                 .padding(.horizontal)
-                .padding(.top, 4)
+                .padding(.top, 8)
+            }
+
+            // Error banner (low-key)
+            if let error = state.lastError {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.focusDanger)
+                    Text(error).font(.caption).foregroundStyle(Color.focusDanger)
+                    Spacer()
+                    Button("清除") { state.lastError = nil }
+                        .buttonStyle(.plain)
+                        .font(.caption)
+                        .foregroundStyle(Color.focusDanger)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.focusDanger.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
+                .padding(.horizontal)
+                .padding(.top, 8)
             }
 
             // Scrollable content
@@ -100,87 +137,18 @@ struct MainView: View {
                     switch selectedTab {
                     case 0: WebsiteListView(state: state)
                     case 1: AppListView(state: state)
-                    case 2: WiFiView(state: state)
-                    default: FocusTimerView(state: state)
+                    case 2: FocusTimerView(state: state)
+                    default: WiFiView(state: state)
                     }
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
-                .padding(.bottom, 8)
             }
 
-            // Password not set reminder
-            if state.blockingEnabled && !state.hasPassword {
-                HStack(spacing: 6) {
-                    Image(systemName: "key.fill").foregroundStyle(.orange)
-                    Text("未设置屏蔽密码，点击「停止屏蔽」无需验证即可关闭。建议设置密码增加操作摩擦，防止一时冲动。")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                    Spacer()
-                    Button("设置") { state.showSettingsSheet = true }
-                        .buttonStyle(.plain)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                .padding(.horizontal)
-            }
-
-            // Error banner
-            if let error = state.lastError {
-                HStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
-                    Text(error).font(.caption).foregroundStyle(.red)
-                    Spacer()
-                    Button("清除") { state.lastError = nil }
-                        .buttonStyle(.plain)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                .padding(.horizontal)
-            }
-
-            Divider()
-
-            // Control bar
-            HStack(spacing: 8) {
-                Image(systemName: state.blockingEnabled ? "lock.shield.fill" : "lock.shield")
-                    .foregroundStyle(state.blockingEnabled ? .red : .secondary)
-                if state.isProcessing {
-                    ProgressView().controlSize(.small)
-                    Text("处理中…").font(.subheadline)
-                } else {
-                    Text(state.blockingEnabled ? "屏蔽中" : "已停止")
-                        .font(.subheadline)
-                }
-                Spacer()
-                Button(action: { state.toggleBlocking() }) {
-                    Text(state.blockingEnabled ? "停止屏蔽" : "开启屏蔽")
-                        .font(.subheadline)
-                }
-                .buttonStyle(AlwaysActiveButtonStyle(color: state.blockingEnabled ? .red : .green))
-                .disabled(state.isProcessing || state.isLocked || state.delayedBlockActive)
-                // Helper status dot — only show when not installed (avoid clutter when everything's fine)
-                if !state.helperInstalled {
-                    Image(systemName: "exclamationmark.shield.fill")
-                        .foregroundStyle(.orange)
-                        .help("后台助手未安装，首次操作将请求授权")
-                }
-                Button(action: { state.showSettingsSheet = true }) {
-                    Image(systemName: "gearshape")
-                        .font(.subheadline)
-                }
-                .buttonStyle(AlwaysActiveBorderlessStyle())
-                .help("设置")
-            }
-            .padding(.horizontal)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
+            // Bottom control bar (full-width bar, bottom margin only)
+            controlBar
+                .padding(.top, 8)
+                .padding(.bottom, 16)
         }
         .frame(minWidth: 500, minHeight: 500, alignment: .top)
         .sheet(isPresented: $state.showPasswordSheet, onDismiss: {
@@ -263,14 +231,6 @@ struct MainView: View {
             }
     }
 
-    private func remainingString(end: Date?) -> String {
-        guard let end, end > Date() else { return "00:00" }
-        let remaining = Int(end.timeIntervalSince(Date()))
-        let mins = remaining / 60
-        let secs = remaining % 60
-        return String(format: "%02d:%02d", mins, secs)
-    }
-
     private func confirmEmergencyOverride() {
         let ok = state.emergencyOverride(password: emergencyPasswordInput)
         if ok {
@@ -293,4 +253,125 @@ struct MainView: View {
             passwordError = true
         }
     }
+
+    // MARK: - Bottom control bar
+
+    private var controlBar: some View {
+        HStack(spacing: 12) {
+            Image(systemName: state.blockingEnabled ? "lock.shield.fill" : "lock.shield")
+                .font(.system(size: 20))
+                .foregroundStyle(state.blockingEnabled ? Color.focusActive : Color.secondary)
+                .frame(width: 24)
+
+            if state.isProcessing {
+                ProgressView().controlSize(.small)
+                Text("处理中…")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else if state.coolDownRemaining > 0 && !state.focusTimerActive {
+                TimelineView(.periodic(from: .now, by: 1)) { _ in
+                    Text("冷静期 · \(coolDownString(state.coolDownRemaining))")
+                        .font(.subheadline)
+                        .monospacedDigit()
+                }
+            } else {
+                Text(state.blockingEnabled ? "屏蔽中" : "已停止")
+                    .font(.subheadline)
+            }
+
+            if state.blockingEnabled {
+                listLockedBadge
+            }
+
+            Spacer()
+
+            Button(action: {
+                if state.delayedBlockActive {
+                    state.blockNow()
+                } else {
+                    state.toggleBlocking()
+                }
+            }) {
+                Text(controlButtonTitle)
+                    .font(.subheadline)
+            }
+            .buttonStyle(AlwaysActiveButtonStyle(color: controlButtonColor))
+            .disabled(state.isProcessing || state.isLocked || state.coolDownRemaining > 0)
+
+            Button(action: { state.showSettingsSheet = true }) {
+                Image(systemName: "gearshape")
+            }
+            .buttonStyle(AlwaysActiveBorderlessStyle())
+            .help("设置")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, minHeight: 56)
+        .overlay(alignment: .top) { Divider() }
+        .background(Color.secondary.opacity(0.07))
+    }
+
+    /// 延时屏蔽倒计时期间，主按钮变为「立即屏蔽」。
+    private var controlButtonTitle: String {
+        if state.delayedBlockActive { return "立即屏蔽" }
+        return state.blockingEnabled ? "停止屏蔽" : "开启屏蔽"
+    }
+
+    private var controlButtonColor: Color {
+        if state.delayedBlockActive { return .focusActive }
+        return state.blockingEnabled ? .focusDanger : .focusAccent
+    }
+
+    private var listLockedBadge: some View {
+        Label("屏蔽名单可增不可减", systemImage: "lock.fill")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(.quaternary, in: Capsule())
+    }
+
+    @ViewBuilder
+    private func statusBanner<Content: View>(
+        icon: String,
+        color: Color,
+        actionTitle: String?,
+        actionColor: Color?,
+        actionDisabled: Bool,
+        action: @escaping () -> Void,
+        @ViewBuilder text: () -> Content
+    ) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .foregroundStyle(color)
+            text()
+            Spacer()
+            if let actionTitle, let actionColor {
+                Button(actionTitle) { action() }
+                    .buttonStyle(AlwaysActiveBorderlessStyle(color: actionColor))
+                    .font(.caption)
+                    .disabled(actionDisabled)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
+        .padding(.horizontal)
+        .padding(.top, 8)
+    }
+}
+
+private func remainingString(end: Date?) -> String {
+    guard let end, end > Date() else { return "00:00" }
+    let remaining = Int(end.timeIntervalSince(Date()))
+    let mins = remaining / 60
+    let secs = remaining % 60
+    return String(format: "%02d:%02d", mins, secs)
+}
+
+private func coolDownString(_ remaining: TimeInterval) -> String {
+    let total = Int(remaining)
+    let mins = total / 60
+    let secs = total % 60
+    return String(format: "%02d:%02d", mins, secs)
 }

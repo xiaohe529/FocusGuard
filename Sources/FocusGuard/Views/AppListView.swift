@@ -20,13 +20,13 @@ struct AppListView: View {
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { addApp() }
                 Button("添加", action: addApp)
-                    .buttonStyle(AlwaysActiveButtonStyle(color: .blue))
+                    .buttonStyle(AlwaysActiveButtonStyle(color: .focusAccent))
                     .disabled(newApp.trimmingCharacters(in: .whitespaces).isEmpty)
                 Button(action: loadInstalledApps) {
                     Label("选择", systemImage: "list.bullet")
                         .font(.body)
                 }
-                .buttonStyle(AlwaysActiveBorderlessStyle(color: .blue))
+                .buttonStyle(AlwaysActiveBorderlessStyle(color: .focusAccent))
                 .help("从已安装 App 中选择")
             }
             Text("屏蔽开启后，这些 App 会被强制关闭。")
@@ -86,7 +86,7 @@ struct AppListView: View {
                                 .buttonStyle(.plain)
                                 .padding(.vertical, 6)
                                 .padding(.horizontal, 8)
-                                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                                .background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
                             }
                         }
                     }
@@ -171,7 +171,7 @@ struct AppListView: View {
                     .padding(4)
             }
             .buttonStyle(AlwaysActiveBorderlessStyle())
-            .disabled(state.isLocked)
+            .disabled(state.isLocked || state.blockingEnabled)
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 4)
@@ -184,11 +184,11 @@ struct AppListView: View {
             let ruleID = r.id
 
             if !newState {
-                // Disabling: blocked during focus timer
-                if state.isLocked {
+                // Disabling: blocked during focus timer or while blocking is active
+                if state.isLocked || state.blockingEnabled {
                     revertingRuleID = ruleID
                     rule.enabled.wrappedValue = oldValue
-                    state.lastError = "专注计时中，无法解除屏蔽规则"
+                    state.lastError = state.blockingEnabled ? "屏蔽开启中，名单已锁定，无法关闭规则" : "专注计时中，无法解除屏蔽规则"
                     return
                 }
                 if state.hasPassword {
