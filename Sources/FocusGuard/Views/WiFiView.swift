@@ -60,7 +60,6 @@ struct WiFiView: View {
                 } label: {
                     Label(state.wifiDisabled ? "恢复网络" : "拦截网络",
                           systemImage: state.wifiDisabled ? "wifi" : "network.slash")
-                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(AlwaysActiveButtonStyle(color: state.wifiDisabled ? .focusActive : .focusDanger))

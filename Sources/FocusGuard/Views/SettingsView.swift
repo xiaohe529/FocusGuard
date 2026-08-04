@@ -373,10 +373,8 @@ struct SettingsView: View {
                             recoverPassword()
                         } label: {
                             Label("显示密码", systemImage: "eye")
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 4)
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(AlwaysActiveButtonStyle(color: .focusAccent))
                         .disabled(recoveryInput1.isEmpty || recoveryInput1 != recoveryInput2)
                         if !recoveryError.isEmpty {
                             Text(recoveryError)
@@ -420,11 +418,8 @@ struct SettingsView: View {
                             deletePassword()
                         } label: {
                             Label("删除密码", systemImage: "trash")
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 4)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.red)
+                        .buttonStyle(AlwaysActiveButtonStyle(color: .focusDanger))
                         .disabled(deletePwdInput1.isEmpty || deletePwdInput1 != deletePwdInput2)
                         if !deletePwdError.isEmpty {
                             Text(deletePwdError)

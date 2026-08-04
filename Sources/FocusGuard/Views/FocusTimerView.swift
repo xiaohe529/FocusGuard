@@ -70,7 +70,6 @@ struct FocusTimerView: View {
                 state.startFocusTimer(minutes: focusCustomMinutes)
             } label: {
                 Label("开始计时", systemImage: "play.fill")
-                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
             }
             .buttonStyle(AlwaysActiveButtonStyle(color: .focusActive))
@@ -111,7 +110,6 @@ struct FocusTimerView: View {
                     state.startDelayedBlock(minutes: delayedCustomMinutes)
                 } label: {
                     Label("开始计时", systemImage: "play.fill")
-                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(AlwaysActiveButtonStyle(color: .focusAccent))
@@ -183,7 +181,6 @@ struct FocusTimerView: View {
                 state.showEmergencyOverrideSheet = true
             } label: {
                 Label("紧急退出", systemImage: "xmark.shield")
-                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
             }
             .buttonStyle(AlwaysActiveButtonStyle(color: .focusDanger))
@@ -214,7 +211,6 @@ struct FocusTimerView: View {
                     state.blockNow()
                 } label: {
                     Label("立即屏蔽", systemImage: "lock.fill")
-                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(AlwaysActiveButtonStyle(color: .focusActive))
@@ -223,7 +219,6 @@ struct FocusTimerView: View {
                     state.cancelDelayedBlock()
                 } label: {
                     Label("取消计时", systemImage: "xmark")
-                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(AlwaysActiveButtonStyle(color: .gray))
@@ -273,7 +268,6 @@ struct FocusTimerView: View {
                 state.presentExtendAlert()
             } label: {
                 Label("立即打开弹窗", systemImage: "exclamationmark.bubble")
-                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
             }
             .buttonStyle(AlwaysActiveButtonStyle(color: .focusAccent))

@@ -40,11 +40,11 @@ struct AlwaysActiveButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .padding(.horizontal, 12)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 5)
             .background(color.opacity(configuration.isPressed ? 0.7 : 1.0))
             .foregroundColor(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .clipShape(Capsule())
     }
 }
 
